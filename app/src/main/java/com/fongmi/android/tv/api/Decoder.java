@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.api;
 
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.fongmi.android.tv.utils.UrlUtil;
@@ -23,20 +24,34 @@ public class Decoder {
     private static final Pattern JS_URI = Pattern.compile("\"(\\.|\\.\\.)/(.?|.+?)\\.js\\?(.?|.+?)\"");
 
     public static String getJson(String url, String tag) throws Exception {
+        return getJson(url, tag, null, null);
+    }
+
+    public static String getJson(String url, String tag, String aesKey, String aesIv) throws Exception {
         try (Response res = OkHttp.newCall(url, tag).execute()) {
             HttpUrl httpUrl = res.request().url();
             int size = HttpUrl.parse(url).querySize();
             if (httpUrl.querySize() == size) url = httpUrl.toString();
-            return verify(url, res.body().string());
+            return verify(url, res.body().string(), aesKey, aesIv);
         }
     }
 
-    private static String verify(String url, String data) throws Exception {
+    private static String verify(String url, String data, String aesKey, String aesIv) throws Exception {
         if (data.isEmpty()) throw new Exception();
+        if (!TextUtils.isEmpty(aesKey) && !TextUtils.isEmpty(aesIv)) data = aes256cbc(data.trim(), aesKey, aesIv);
         if (Json.isObj(data)) return fix(url, data);
         if (data.contains("**")) data = base64(data);
         if (data.startsWith("2423")) data = cbc(data.replaceAll("\\s+", ""));
         return fix(url, data);
+    }
+
+    private static String aes256cbc(String data, String key, String iv) throws Exception {
+        SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes(StandardCharsets.UTF_8));
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+        byte[] decrypted = cipher.doFinal(Base64.decode(data, Base64.DEFAULT));
+        return new String(decrypted, StandardCharsets.UTF_8);
     }
 
     private static String fix(String url, String data) {

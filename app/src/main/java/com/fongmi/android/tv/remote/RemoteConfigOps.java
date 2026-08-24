@@ -32,8 +32,13 @@ public final class RemoteConfigOps {
         int type = number(payload, "type", 0);
         String url = string(payload, "url");
         String name = string(payload, "name");
+        String aesKey = string(payload, "aesKey");
+        String aesIv = string(payload, "aesIv");
         if (TextUtils.isEmpty(url)) return RemoteCommandResult.failure("Missing config url");
-        Config.find(url, type).name(name).save();
+        Config config = Config.find(url, type).name(name);
+        config.setAesKey(aesKey);
+        config.setAesIv(aesIv);
+        config.save();
         return RemoteCommandResult.success("Config saved", data());
     }
 
@@ -150,7 +155,10 @@ public final class RemoteConfigOps {
         String url = string(payload, "url");
         String name = string(payload, "name");
         if (TextUtils.isEmpty(url)) return null;
-        return new Config().type(0).url(url).name(name);
+        Config config = new Config().type(0).url(url).name(name);
+        config.setAesKey(string(payload, "aesKey"));
+        config.setAesIv(string(payload, "aesIv"));
+        return config;
     }
 
     private static Config vodConfig(JsonObject payload) {

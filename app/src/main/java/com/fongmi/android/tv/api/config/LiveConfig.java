@@ -123,7 +123,7 @@ public class LiveConfig extends BaseConfig {
             initLive(config, new JsonObject());
             return;
         }
-        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
+        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG, config.getAesKey(), config.getAesIv());
         if (Json.isObj(json)) checkJson(config, Json.parse(json).getAsJsonObject());
         else parseText(config, json);
     }

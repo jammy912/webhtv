@@ -41,6 +41,10 @@ public class Config {
     private String home;
     @SerializedName("parse")
     private String parse;
+    @SerializedName("aesKey")
+    private String aesKey;
+    @SerializedName("aesIv")
+    private String aesIv;
 
     @Ignore
     @SerializedName("notice")
@@ -192,6 +196,22 @@ public class Config {
 
     public void setParse(String parse) {
         this.parse = parse;
+    }
+
+    public String getAesKey() {
+        return aesKey;
+    }
+
+    public void setAesKey(String aesKey) {
+        this.aesKey = aesKey;
+    }
+
+    public String getAesIv() {
+        return aesIv;
+    }
+
+    public void setAesIv(String aesIv) {
+        this.aesIv = aesIv;
     }
 
     public long getTime() {

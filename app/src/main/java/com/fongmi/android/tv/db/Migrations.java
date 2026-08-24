@@ -64,4 +64,12 @@ public class Migrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_PlaybackDeleteTombstone_deletedAt` ON `PlaybackDeleteTombstone` (`deletedAt`)");
         }
     };
+
+    public static final Migration MIGRATION_37_38 = new Migration(37, 38) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE Config ADD COLUMN aesKey TEXT DEFAULT NULL");
+            database.execSQL("ALTER TABLE Config ADD COLUMN aesIv TEXT DEFAULT NULL");
+        }
+    };
 }

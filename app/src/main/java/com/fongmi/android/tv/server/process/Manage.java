@@ -344,8 +344,12 @@ public class Manage implements Process {
             int type = intValue(params.get("type"), 0);
             String url = params.getOrDefault("url", "").trim();
             String name = params.getOrDefault("name", "").trim();
+            String aesKey = params.getOrDefault("aesKey", "").trim();
+            String aesIv = params.getOrDefault("aesIv", "").trim();
             if (TextUtils.isEmpty(url)) return Nano.error(Status.BAD_REQUEST, "Missing url");
             Config config = Config.find(url, type).name(name);
+            config.setAesKey(aesKey);
+            config.setAesIv(aesIv);
             config.save();
         }
         JsonObject object = new JsonObject();
