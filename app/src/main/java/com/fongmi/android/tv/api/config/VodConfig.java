@@ -135,13 +135,24 @@ public class VodConfig extends BaseConfig {
     }
 
     private void checkJson(Config config, JsonObject object) throws Throwable {
-        if (object.has("msg")) {
-            throw new Exception(object.get("msg").getAsString());
-        } else if (object.has("urls")) {
+        if (object.has("urls")) {
             parseDepot(config, object);
+        } else if (isErrorResponse(object)) {
+            throw new Exception(getErrorMsg(object));
         } else {
             parseConfig(config, object);
         }
+    }
+
+    // A config is only rejected when it carries no usable content.  Checking for a
+    // bare "msg" key is not enough: a valid config may use it as a notice field.
+    private boolean isErrorResponse(JsonObject object) {
+        return Json.isEmpty(object, "sites") && Json.isEmpty(object, "lives") && Json.isEmpty(object, "parses");
+    }
+
+    private String getErrorMsg(JsonObject object) {
+        String msg = Json.safeString(object, "msg");
+        return msg.isEmpty() ? "No sites in config" : msg;
     }
 
     private void parseDepot(Config config, JsonObject object) throws Throwable {

@@ -2,15 +2,15 @@ package com.fongmi.android.tv.utils;
 
 public class Github {
 
-    private static final String GITHUB_LATEST = "https://github.com/fish2018/webhtv/releases/latest/download";
-    private static final String GITHUB_RELEASE = "https://github.com/fish2018/webhtv/releases/download";
-    private static final String GITHUB_API = "https://api.github.com/repos/fish2018/webhtv/releases/tags";
-    private static final String GITHUB_RELEASES_API = "https://api.github.com/repos/fish2018/webhtv/releases";
-    private static final String GITHUB_RELEASE_ASSETS_API = "https://api.github.com/repos/fish2018/webhtv/releases/assets";
-    private static final String CNB = "https://cnb.cool/fish2035/webhtv-release/-/git/raw/main";
+    private static final String GITHUB_LATEST = "https://github.com/jammy912/webhtv/releases/latest/download";
+    private static final String GITHUB_RELEASE = "https://github.com/jammy912/webhtv/releases/download";
+    private static final String GITHUB_API = "https://api.github.com/repos/jammy912/webhtv/releases/tags";
+    private static final String GITHUB_RELEASES_API = "https://api.github.com/repos/jammy912/webhtv/releases";
+    private static final String GITHUB_RELEASE_ASSETS_API = "https://api.github.com/repos/jammy912/webhtv/releases/assets";
+    // Fork 自用發佈：不使用上游 CNB 鏡像，主通道改由 GitHub Releases 提供。
 
     public static String getCnbAsset(String name) {
-        return CNB + "/apk/" + name;
+        return getGithubLatestAsset(name);
     }
 
     public static String getGithubLatestAsset(String name) {
