@@ -1,6 +1,9 @@
 name: Android Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       release_tag:
@@ -25,21 +28,12 @@ on:
         required: false
         default: false
         type: boolean
-      sync_cnb:
-        description: "Mirror APKs to CNB Release and sync CNB manifests"
-        required: false
-        default: true
-        type: boolean
 
 permissions:
   contents: write
 
 env:
   TZ: Asia/Shanghai
-  CNB_API_ENDPOINT: https://api.cnb.cool
-  CNB_WEB_ENDPOINT: https://cnb.cool
-  CNB_REPO_SLUG: fish2035/webhtv-release
-  CNB_REPO_URL: https://cnb.cool/fish2035/webhtv-release.git
 
 jobs:
   release:
@@ -258,18 +252,6 @@ jobs:
             --notes "$NOTES" \
             $PRERELEASE_FLAG \
             dist/*.apk dist/*.json
-
-      - name: Sync to CNB
-        if: ${{ inputs.sync_cnb }}
-        env:
-          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
-          CNB_RELEASE_TAG: ${{ steps.meta.outputs.tag }}
-          CNB_RELEASE_TITLE: ${{ steps.meta.outputs.title }}
-          CNB_RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
-          CNB_RELEASE_PRERELEASE: ${{ inputs.prerelease == true || steps.meta.outputs.channel == 'beta' }}
-          CNB_RELEASE_LATEST: ${{ steps.meta.outputs.channel == 'stable' }}
-        run: |
-          .github/scripts/sync-cnb-release.sh
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
