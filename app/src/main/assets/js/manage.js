@@ -101,7 +101,7 @@ function heartbeat(close = false) {
             renderServiceStatus(data);
         })
         .fail(() => {
-            $('#serviceStatus').text('连接异常').addClass('off').removeClass('warn');
+            $('#serviceStatus').text('連線異常').addClass('off').removeClass('warn');
             $('#keepAliveHint').css('display', 'flex');
         });
 }
@@ -110,10 +110,10 @@ function renderServiceStatus(data) {
     const running = !!(data && data.running && data.serverRunning !== false);
     const optimized = !!(data && (data.backgroundSettingsNeeded != null ? data.backgroundSettingsNeeded : data.batteryOptimized));
     const missingLock = !!(data && running && (!data.wakeLock || !data.wifiLock));
-    const text = !running ? '页面已关闭' : optimized ? '后台设置' : missingLock ? '保活异常' : '页面运行中';
-    const title = running ? `后台受限: ${optimized ? '是' : '否'}，CPU锁: ${data.wakeLock ? '是' : '否'}，Wi-Fi锁: ${data.wifiLock ? '是' : '否'}` : '管理页服务未运行';
+    const text = !running ? '頁面已關閉' : optimized ? '後台設定' : missingLock ? '保活異常' : '頁面執行中';
+    const title = running ? `後台受限：${optimized ? '是' : '否'}，CPU 鎖：${data.wakeLock ? '是' : '否'}，Wi-Fi 鎖：${data.wifiLock ? '是' : '否'}` : '管理頁服務未執行';
     $('#serviceStatus').text(text).toggleClass('off', !running).toggleClass('warn', running && (optimized || missingLock)).attr('title', title);
-    $('#backgroundGuideText').text(data && data.backgroundGuide ? data.backgroundGuide : 'App 进入后台后可能断开连接，请允许后台高耗电或后台运行。');
+    $('#backgroundGuideText').text(data && data.backgroundGuide ? data.backgroundGuide : 'App 進入後台後可能斷開連線，請允許後台高耗電或後台執行。');
     $('#keepAliveHint').css('display', running && optimized ? 'flex' : 'none');
 }
 
@@ -194,7 +194,7 @@ function isRemoteRequest(url, data) {
 function blockOfflineRemote(url, data) {
     const remote = data && data.target ? data.target : target;
     if (!isRemoteRequest(url, data) || !isRemoteOffline(remote)) return false;
-    warnToast('远端设备离线，已停止操作');
+    warnToast('遠端裝置離線，已停止操作');
     pingRemote(true);
     return true;
 }
@@ -207,7 +207,7 @@ function updateTargetHealthUi() {
     const checking = selected && (!state || state.checking);
     $('#remotePicker').toggleClass('remote-offline', !!offline).toggleClass('remote-online', !!online).toggleClass('remote-checking', !!checking);
     $('#targetStatusDot').toggleClass('ok-dot', !!online).toggleClass('offline-dot', !!offline).toggleClass('pending-dot', !online && !offline);
-    $('#targetStatusText').text(!selected ? '远端设备' : offline ? '远端离线' : online ? '远端在线' : '检测中');
+    $('#targetStatusText').text(!selected ? '遠端裝置' : offline ? '遠端離線' : online ? '遠端上線' : '檢測中');
 }
 
 function renderDeviceHealth() {
@@ -220,9 +220,9 @@ function renderDeviceHealth() {
 
 function stopManagePage() {
     postAction('/manage/session', { stop: 'true' }, () => {
-        $('#serviceStatus').text('页面已关闭').addClass('off');
-        warnToast('管理页面已关闭');
-    }, '关闭失败');
+        $('#serviceStatus').text('頁面已關閉').addClass('off');
+        warnToast('管理頁面已關閉');
+    }, '關閉失敗');
 }
 
 function openBackgroundSettings() {
@@ -230,17 +230,17 @@ function openBackgroundSettings() {
     postAction('/manage/background/settings', data, res => {
         let info = {};
         try { info = parseJson(res); } catch (e) {}
-        warnToast(info.opened ? '已尝试打开后台设置' : (info.guide || '未找到可直达的后台设置页'));
+        warnToast(info.opened ? '已嘗試開啟後台設定' : (info.guide || '未找到可直達的後台設定頁'));
         heartbeat(false);
-    }, '后台设置打开失败');
+    }, '後台設定開啟失敗');
 }
 
 function showLoading() { loadingCount++; $('#loadingToast').show(); }
 function hideLoading() { loadingCount = Math.max(0, loadingCount - 1); if (loadingCount === 0) $('#loadingToast').hide(); }
 
 function requestError(xhr, status, fallback) {
-    if (status === 'timeout') return '请求超时，请确认 App 仍在前台或设备未被系统限制后台运行';
-    if (status === 'abort') return '请求已取消';
+    if (status === 'timeout') return '請求逾時，請確認 App 仍在前台或裝置未被系統限制後台執行';
+    if (status === 'abort') return '請求已取消';
     return xhr && xhr.responseText ? xhr.responseText : fallback;
 }
 
@@ -248,29 +248,29 @@ function parseJson(res) {
     return typeof res === 'string' ? JSON.parse(res) : res;
 }
 
-function ajaxJson(options, done, failText = '加载失败') {
+function ajaxJson(options, done, failText = '載入失敗') {
     showLoading();
     $.ajax({ timeout: REQUEST_TIMEOUT, cache: false, ...options })
         .done(res => {
             try { done(parseJson(res)); }
-            catch (e) { warnToast('响应格式错误'); }
+            catch (e) { warnToast('回應格式錯誤'); }
         })
         .fail((xhr, status) => warnToast(requestError(xhr, status, failText)))
         .always(hideLoading);
 }
 
-function getJson(url, done, failText = '加载失败') {
+function getJson(url, done, failText = '載入失敗') {
     if (blockOfflineRemote(url, null)) return;
     ajaxJson({ url }, done, failText);
 }
 
-function postJson(url, data, done, failText = '保存失败') {
+function postJson(url, data, done, failText = '儲存失敗') {
     const payload = { ...targetParam(), ...data };
     if (blockOfflineRemote(url, payload)) return;
     ajaxJson({ url, type: 'post', data: payload }, done, failText);
 }
 
-function postAction(url, data, done, failText = '操作失败') {
+function postAction(url, data, done, failText = '操作失敗') {
     if (blockOfflineRemote(url, data)) return;
     showLoading();
     $.ajax({ url, type: 'post', data, timeout: REQUEST_TIMEOUT, cache: false })
@@ -290,14 +290,14 @@ function setManageMode(next) {
     resetViewState();
     if (mode === 'remote' || currentView === 'sync') loadDevices();
     startRemoteHealth();
-    if (mode === 'remote' && target) pingRemote(true, ok => { if (ok) loadCurrentView(true); else warnToast('远端设备离线'); });
+    if (mode === 'remote' && target) pingRemote(true, ok => { if (ok) loadCurrentView(true); else warnToast('遠端裝置離線'); });
     else loadCurrentView(true);
 }
 
 function updateTargetText() {
-    $('#manageTargetText').text(mode === 'remote' ? (target ? '远端管理 · ' + targetName : '远端管理 · 请选择设备') : '本机管理 · 当前 App 设备');
-    $('#targetDeviceText').html(target ? `<span>${escHtml(targetName || target)}</span><small>${escHtml(target)}</small>` : '<span>请选择设备</span>');
-    $('#syncTargetText').text(targetName || target || '未选择');
+    $('#manageTargetText').text(mode === 'remote' ? (target ? '遠端管理 · ' + targetName : '遠端管理 · 請選擇裝置') : '本機管理 · 目前 App 裝置');
+    $('#targetDeviceText').html(target ? `<span>${escHtml(targetName || target)}</span><small>${escHtml(target)}</small>` : '<span>請選擇裝置</span>');
+    $('#syncTargetText').text(targetName || target || '未選擇');
 }
 
 function resetViewState() {
@@ -319,7 +319,7 @@ function resetViewState() {
 }
 
 function loadDevices(scan = false) {
-    getJson('/manage/devices' + (scan ? '?scan=true' : ''), data => renderDevices(data.devices || []), '设备列表加载失败');
+    getJson('/manage/devices' + (scan ? '?scan=true' : ''), data => renderDevices(data.devices || []), '裝置清單載入失敗');
 }
 
 function scanDevices() {
@@ -336,7 +336,7 @@ function renderDevices(devices) {
         const state = targetHealth(device.ip);
         const health = state && state.ok === false ? ' offline' : state && state.ok === true ? ' online' : '';
         return `<button class="device-item${active}${health}" data-ip="${escHtml(device.ip || '')}" type="button" onclick="selectDevice('${escPath(device.ip)}','${escPath(device.name || device.ip)}')"><i class="device-dot"></i><span>${escHtml(device.name || device.ip)}</span><small>${escHtml(device.ip || '')}</small></button>`;
-    }).join('') || '<div class="empty-state">未发现设备，请确认电视和手机在同一局域网，并已打开 App</div>');
+    }).join('') || '<div class="empty-state">未發現裝置，請確認電視和手機在同一區域網路，並已開啟 App</div>');
     updateRemotePicker();
     renderDeviceHealth();
 }
@@ -349,7 +349,7 @@ function selectDevice(ip, name) {
     updateRemotePicker();
     resetViewState();
     startRemoteHealth();
-    pingRemote(true, ok => { if (ok) loadCurrentView(true); else warnToast('远端设备离线，稍后会自动重试'); });
+    pingRemote(true, ok => { if (ok) loadCurrentView(true); else warnToast('遠端裝置離線，稍後會自動重試'); });
     loadDevices();
 }
 
@@ -363,7 +363,7 @@ function updateRemotePicker() {
     const visible = mode === 'remote' || currentView === 'sync';
     $('#remotePicker').css('display', visible ? 'grid' : 'none');
     $('#deviceList').toggle(visible && devicePanelOpen);
-    $('#changeDeviceBtn').text(devicePanelOpen ? '收起列表' : '选择设备');
+    $('#changeDeviceBtn').text(devicePanelOpen ? '收合清單' : '選擇裝置');
     updateTargetText();
 }
 
@@ -375,11 +375,11 @@ function showManageView(view) {
     startRemoteHealth();
     if (mode === 'remote' && currentView !== 'sync' && target) {
         if (isRemoteOffline(target)) {
-            warnToast('远端设备离线，已停止加载');
+            warnToast('遠端裝置離線，已停止載入');
             pingRemote(true);
             return;
         }
-        pingRemote(true, ok => { if (ok) loadCurrentView(false); else warnToast('远端设备离线'); });
+        pingRemote(true, ok => { if (ok) loadCurrentView(false); else warnToast('遠端裝置離線'); });
     } else {
         loadCurrentView(false);
     }
@@ -394,7 +394,7 @@ function activateManageView(view) {
 
 function ensureTarget() {
     if (mode !== 'remote' || currentView === 'sync' || target) return true;
-    warnToast('请先选择远端设备');
+    warnToast('請先選擇遠端裝置');
     devicePanelOpen = true;
     updateRemotePicker();
     loadDevices();
@@ -413,7 +413,7 @@ function loadCurrentView(force) {
 }
 
 function formatFileSize(size, isDir) {
-    if (isDir) return '文件夹';
+    if (isDir) return '資料夾';
     const value = Number(size);
     if (!Number.isFinite(value) || value < 0) return '-';
     if (value < 1024) return value + ' B';
@@ -426,7 +426,7 @@ function formatFileSize(size, isDir) {
 
 function renderFileBreadcrumb(path) {
     const parts = String(path || '').split('/').filter(Boolean);
-    const rows = [`<button class="crumb" type="button" onclick="listFile('')">全部文件</button>`];
+    const rows = [`<button class="crumb" type="button" onclick="listFile('')">全部檔案</button>`];
     let current = '';
     parts.forEach(part => {
         current += '/' + part;
@@ -449,11 +449,11 @@ function loadFileTree(path = '') {
         .done(res => {
             let data;
             try { data = parseJson(res); }
-            catch (e) { warnToast('响应格式错误'); return; }
+            catch (e) { warnToast('回應格式錯誤'); return; }
             fileTreeCache[path] = { path, parent: data.parent || '', items: data.files || [] };
             renderFileTree();
         })
-        .fail((xhr, status) => warnToast(requestError(xhr, status, '目录树加载失败')))
+        .fail((xhr, status) => warnToast(requestError(xhr, status, '目錄樹載入失敗')))
         .always(() => {
         fileTreeLoading.delete(path);
         });
@@ -465,14 +465,14 @@ function renderFileTree() {
     const rootExpanded = fileTreeExpanded.has('');
     const visible = [];
     const rows = [`<div class="file-tree-row file-tree-root${rootActive}" style="--depth:0" data-path="">
-        <button class="tree-toggle file-tree-toggle" type="button" onclick="toggleFileTree('')" aria-label="${rootExpanded ? '收起' : '展开'}">${rootExpanded ? '−' : '+'}</button>
+        <button class="tree-toggle file-tree-toggle" type="button" onclick="toggleFileTree('')" aria-label="${rootExpanded ? '收合' : '展開'}">${rootExpanded ? '−' : '+'}</button>
         <span class="tree-check file-tree-check"></span>
-        <button class="file-tree-main" type="button" onclick="listFile('')"><img class="file-icon" src="${icDir}" alt=""><span>全部文件</span></button>
+        <button class="file-tree-main" type="button" onclick="listFile('')"><img class="file-icon" src="${icDir}" alt=""><span>全部檔案</span></button>
         <div class="file-tree-actions"></div>
     </div>`];
     buildFileTreeRows('', 0, rows, visible);
     currentFiles = visible;
-    $('#fileTree').html(rows.join('') || '<div class="empty-state compact">没有目录</div>');
+    $('#fileTree').html(rows.join('') || '<div class="empty-state compact">沒有目錄</div>');
     updateFileSelection();
 }
 
@@ -481,7 +481,7 @@ function buildFileTreeRows(path, depth, rows, visible) {
     if (path && !fileTreeExpanded.has(path)) return;
     const tree = fileTreeCache[path];
     if (!tree) {
-        rows.push(`<div class="file-tree-row muted" style="--depth:${depth + 1}"><span class="tree-toggle placeholder"></span><span class="tree-check file-tree-check"></span><div class="file-tree-main"><span>加载中...</span></div><div class="file-tree-actions"></div></div>`);
+        rows.push(`<div class="file-tree-row muted" style="--depth:${depth + 1}"><span class="tree-toggle placeholder"></span><span class="tree-check file-tree-check"></span><div class="file-tree-main"><span>載入中...</span></div><div class="file-tree-actions"></div></div>`);
         loadFileTree(path);
         return;
     }
@@ -489,7 +489,7 @@ function buildFileTreeRows(path, depth, rows, visible) {
         if (a.dir !== b.dir) return b.dir - a.dir;
         return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hans');
     });
-    if (!items.length && path === syncNormalize(currentRoot)) rows.push(`<div class="file-tree-row muted" style="--depth:${depth + 1}"><span class="tree-toggle placeholder"></span><span class="tree-check file-tree-check"></span><div class="file-tree-main"><span>当前目录没有文件</span></div><div class="file-tree-actions"></div></div>`);
+    if (!items.length && path === syncNormalize(currentRoot)) rows.push(`<div class="file-tree-row muted" style="--depth:${depth + 1}"><span class="tree-toggle placeholder"></span><span class="tree-check file-tree-check"></span><div class="file-tree-main"><span>目前目錄沒有檔案</span></div><div class="file-tree-actions"></div></div>`);
     items.forEach(item => {
         if (item.path) visible.push(syncNormalize(item.path));
         rows.push(buildFileTreeNode(item, depth + 1));
@@ -505,14 +505,14 @@ function buildFileTreeNode(item, depth) {
     const active = isDir && syncNormalize(currentRoot) === path ? ' active' : '';
     const checked = fileSelection.has(path) ? ' checked' : '';
     const icon = isDir ? icDir : icFile;
-    const toggle = isDir ? `<button class="tree-toggle file-tree-toggle" type="button" onclick="toggleFileTree('${ep}')" aria-label="${expanded ? '收起' : '展开'}">${expanded ? '−' : '+'}</button>` : '<span class="tree-toggle placeholder"></span>';
+    const toggle = isDir ? `<button class="tree-toggle file-tree-toggle" type="button" onclick="toggleFileTree('${ep}')" aria-label="${expanded ? '收合' : '展開'}">${expanded ? '−' : '+'}</button>` : '<span class="tree-toggle placeholder"></span>';
     const click = isDir ? `listFile('${ep}')` : `selectFile('${ep}')`;
     const actions = isDir
-        ? `<button class="file-action" type="button" onclick="downloadArchive(['${ep}'])">打包</button><button class="file-action danger" type="button" onclick="showDelFolderDialog('${ep}','${escPath(parentPath(path))}')">删除</button>`
-        : `<button class="file-action" type="button" onclick="downloadPath('${ep}')">下载</button><button class="file-action danger" type="button" onclick="showDelFileDialog('${ep}')">删除</button>`;
+        ? `<button class="file-action" type="button" onclick="downloadArchive(['${ep}'])">打包</button><button class="file-action danger" type="button" onclick="showDelFolderDialog('${ep}','${escPath(parentPath(path))}')">刪除</button>`
+        : `<button class="file-action" type="button" onclick="downloadPath('${ep}')">下載</button><button class="file-action danger" type="button" onclick="showDelFileDialog('${ep}')">刪除</button>`;
     return `<div class="file-tree-row${active}" style="--depth:${depth}" data-path="${escHtml(path)}">
         ${toggle}
-        <label class="tree-check file-tree-check"><input type="checkbox" aria-label="选择 ${escHtml(item.name || path)}" onchange="toggleFileSelection('${ep}',this.checked)"${checked}></label>
+        <label class="tree-check file-tree-check"><input type="checkbox" aria-label="選擇 ${escHtml(item.name || path)}" onchange="toggleFileSelection('${ep}',this.checked)"${checked}></label>
         <button class="file-tree-main" type="button" onclick="${click}"><img class="file-icon" src="${icon}" alt=""><span>${escHtml(item.name || path)}</span></button>
         <div class="file-tree-actions">${actions}</div>
     </div>`;
@@ -554,7 +554,7 @@ function updateFileSelection() {
     const total = currentFiles.length;
     const all = total > 0 && count === total;
     const partial = count > 0 && count < total;
-    $('#fileSelectionText').text(count ? `已选择 ${count} 项` : `${total} 项`);
+    $('#fileSelectionText').text(count ? `已選擇 ${count} 項` : `${total} 項`);
     $('#fileZipBtn,#fileClearBtn').prop('disabled', count === 0);
     $('#fileSelectionBar').toggleClass('active', count > 0);
     $('#fileSelectAll').prop('checked', all).prop('indeterminate', partial);
@@ -569,7 +569,7 @@ function listFile(path = '') {
         .done(res => {
         let info;
         try { info = parseJson(res); }
-        catch (e) { warnToast('响应格式错误'); return; }
+        catch (e) { warnToast('回應格式錯誤'); return; }
         currentRoot = path;
         currentParent = info.parent || '';
         const files = info.files || [];
@@ -581,7 +581,7 @@ function listFile(path = '') {
         fileSelection.clear();
         renderFileTree();
     })
-        .fail((xhr, status) => warnToast(requestError(xhr, status, '加载失败')))
+        .fail((xhr, status) => warnToast(requestError(xhr, status, '載入失敗')))
         .always(hideLoading);
 }
 
@@ -607,7 +607,7 @@ function confirmUpload(yes) {
     showLoading();
     $.ajax({ url: remote ? '/manage/remote/upload' : '/upload', type: 'post', data: formData, processData: false, contentType: false, timeout: UPLOAD_TIMEOUT })
         .done(() => listFile(currentRoot))
-        .fail((xhr, status) => warnToast(requestError(xhr, status, '上传失败')))
+        .fail((xhr, status) => warnToast(requestError(xhr, status, '上傳失敗')))
         .always(() => { $('#file_uploader').val(''); hideLoading(); });
 }
 
@@ -618,25 +618,25 @@ function confirmNewFolder(yes) {
     $('#newFolderContent').val('');
     if (yes !== 1 || !name) return;
     const remote = mode === 'remote' && !!target;
-    postAction(remote ? '/manage/remote/newFolder' : '/newFolder', { ...(remote ? { target } : {}), path: currentRoot, name }, () => listFile(currentRoot), '新增失败');
+    postAction(remote ? '/manage/remote/newFolder' : '/newFolder', { ...(remote ? { target } : {}), path: currentRoot, name }, () => listFile(currentRoot), '新增失敗');
 }
 
-function showDelFolderDialog(path, refreshPath) { pendingDelFolder = { path, refreshPath }; $('#delFolderContent').text('是否删除 ' + path); openDialog('delFolder'); }
+function showDelFolderDialog(path, refreshPath) { pendingDelFolder = { path, refreshPath }; $('#delFolderContent').text('是否刪除 ' + path); openDialog('delFolder'); }
 function confirmDelFolder(yes) {
     closeDialog('delFolder');
     if (yes !== 1 || !pendingDelFolder) { pendingDelFolder = null; return; }
     const { path, refreshPath } = pendingDelFolder;
     pendingDelFolder = null;
     const remote = mode === 'remote' && !!target;
-    postAction(remote ? '/manage/remote/delFolder' : '/delFolder', { ...(remote ? { target } : {}), path }, () => listFile(refreshPath), '删除失败');
+    postAction(remote ? '/manage/remote/delFolder' : '/delFolder', { ...(remote ? { target } : {}), path }, () => listFile(refreshPath), '刪除失敗');
 }
 
-function showDelFileDialog(path) { currentFile = path; $('#delFileContent').text('是否删除 ' + path); openDialog('delFile'); }
+function showDelFileDialog(path) { currentFile = path; $('#delFileContent').text('是否刪除 ' + path); openDialog('delFile'); }
 function confirmDelFile(yes) {
     closeDialog('delFile');
     if (yes !== 1) return;
     const remote = mode === 'remote' && !!target;
-    postAction(remote ? '/manage/remote/delFile' : '/delFile', { ...(remote ? { target } : {}), path: currentFile }, () => listFile(currentRoot), '删除失败');
+    postAction(remote ? '/manage/remote/delFile' : '/delFile', { ...(remote ? { target } : {}), path: currentFile }, () => listFile(currentRoot), '刪除失敗');
 }
 
 function selectFile(path) { currentFile = path; $('#fileUrl').text('file:/' + path); openDialog('fileInfoDialog'); }
@@ -693,7 +693,7 @@ function renderSyncTree() {
     $('#syncTreePath').text('/');
     const rows = [];
     buildSyncTreeRows('', 0, rows);
-    $('#syncTree').html(rows.join('') || '<div class="empty-state">没有可选目录</div>');
+    $('#syncTree').html(rows.join('') || '<div class="empty-state">沒有可選目錄</div>');
     renderSyncPaths();
 }
 
@@ -701,7 +701,7 @@ function buildSyncTreeRows(path, depth, rows) {
     path = syncNormalize(path);
     const tree = syncTreeCache[path];
     if (!tree) {
-        rows.push(`<div class="sync-tree-row muted" style="--depth:${depth}"><span class="sync-tree-toggle placeholder"></span><span class="tree-check sync-tree-check"></span><div class="sync-tree-main"><span>加载中...</span></div></div>`);
+        rows.push(`<div class="sync-tree-row muted" style="--depth:${depth}"><span class="sync-tree-toggle placeholder"></span><span class="tree-check sync-tree-check"></span><div class="sync-tree-main"><span>載入中...</span></div></div>`);
         loadSyncTree(path);
         return;
     }
@@ -710,7 +710,7 @@ function buildSyncTreeRows(path, depth, rows) {
         rows.push(buildSyncDir(item, depth));
         if (syncTreeExpanded.has(child)) buildSyncTreeRows(child, depth + 1, rows);
     });
-    if (tree.truncated) rows.push(`<div class="sync-tree-row muted" style="--depth:${depth}"><span class="sync-tree-toggle placeholder"></span><span class="tree-check sync-tree-check"></span><div class="sync-tree-main"><span>当前目录过多，仅显示前 300 个目录</span></div></div>`);
+    if (tree.truncated) rows.push(`<div class="sync-tree-row muted" style="--depth:${depth}"><span class="sync-tree-toggle placeholder"></span><span class="tree-check sync-tree-check"></span><div class="sync-tree-main"><span>目前目錄過多，僅顯示前 300 個目錄</span></div></div>`);
 }
 
 function buildSyncDir(item, depth) {
@@ -719,7 +719,7 @@ function buildSyncDir(item, depth) {
     const checked = syncPaths.includes(path) ? ' checked' : '';
     const expanded = syncTreeExpanded.has(path);
     const hasChildren = item.children !== false;
-    const toggle = hasChildren ? `<button class="sync-tree-toggle" type="button" onclick="toggleSyncTree('${ep}')" aria-label="${expanded ? '收起' : '展开'}">${expanded ? '−' : '+'}</button>` : '<span class="sync-tree-toggle placeholder"></span>';
+    const toggle = hasChildren ? `<button class="sync-tree-toggle" type="button" onclick="toggleSyncTree('${ep}')" aria-label="${expanded ? '收合' : '展開'}">${expanded ? '−' : '+'}</button>` : '<span class="sync-tree-toggle placeholder"></span>';
     const click = hasChildren ? `toggleSyncTree('${ep}')` : `toggleSyncPath('${ep}',!syncPaths.includes('${ep}'))`;
     return `<div class="sync-tree-row" style="--depth:${depth}" data-path="${escHtml(path)}">
         ${toggle}
@@ -756,11 +756,11 @@ function toggleSyncPath(path, checked) { syncPaths = syncPaths.filter(item => it
 function removeSyncPath(path) { syncPaths = syncPaths.filter(item => item !== path); renderSyncTree(); }
 function renderSyncPaths() {
     syncPaths = Array.from(new Set(syncPaths.filter(Boolean)));
-    $('#syncPathChips').html(syncPaths.map(path => `<button class="path-chip" type="button" onclick="removeSyncPath('${escPath(path)}')">${escHtml(path)} ×</button>`).join('') || '<span class="empty-state compact">未选择目录</span>');
+    $('#syncPathChips').html(syncPaths.map(path => `<button class="path-chip" type="button" onclick="removeSyncPath('${escPath(path)}')">${escHtml(path)} ×</button>`).join('') || '<span class="empty-state compact">未選擇目錄</span>');
     syncPaths.forEach(path => { const el = document.getElementById('sync_' + itemId(path)); if (el) el.checked = true; });
 }
-function saveSyncPaths() { postJson('/manage/sync/paths', { paths: syncPaths.join('\n') }, data => { syncPaths = data.paths || []; renderSyncPaths(); warnToast('同步目录已保存'); }); }
-function detectSyncPaths() { postJson('/manage/sync/detect', {}, data => { syncPaths = data.paths || []; expandSyncImportantPaths(); renderSyncPaths(); renderSyncTree(); warnToast('已自动加入本地包目录'); }, '自动识别失败'); }
+function saveSyncPaths() { postJson('/manage/sync/paths', { paths: syncPaths.join('\n') }, data => { syncPaths = data.paths || []; renderSyncPaths(); warnToast('同步目錄已儲存'); }); }
+function detectSyncPaths() { postJson('/manage/sync/detect', {}, data => { syncPaths = data.paths || []; expandSyncImportantPaths(); renderSyncPaths(); renderSyncTree(); warnToast('已自動加入本機包目錄'); }, '自動識別失敗'); }
 
 function loadLoginStateManage(force = false) {
     if (loginStateLoadedKey === activeKey() && !force) return;
@@ -772,7 +772,7 @@ function loadLoginStateManage(force = false) {
         loadLoginStateTree('app');
         loadLoginStateTree('sdcard');
         renderLoginStateManage();
-    }, '登录态加载失败');
+    }, '登入狀態載入失敗');
 }
 
 function renderLoginStateManage() {
@@ -782,20 +782,20 @@ function renderLoginStateManage() {
     const findings = data.findings || [];
     const findingsTotal = Number(data.findingsTotal == null ? findings.length : data.findingsTotal);
     const missing = ((data.states || []).filter(item => item && item.exists === false)).length;
-    $('#loginStateSummary').text(`${data.learning ? '学习中' : '未学习'} · 已确认 ${loginStatePaths.length} · 待确认 ${pendingItems.length} · 最近 ${findingsTotal}${missing ? ` · 缺失 ${missing}` : ''}`);
-    $('#loginStateLearnBtn').text(data.learning ? '完成学习' : '开始学习');
-    $('#loginStateRevealBtn').prop('disabled', pendingItems.length === 0).text(pendingItems.length ? `显示待确认(${pendingItems.length})` : '显示待确认');
-    $('#loginStateLearned').html(loginStatePathStates().map(item => buildLoginStateRow(item, 'selected')).join('') || '<div class="empty-state compact">未确认任何登录态路径</div>');
-    $('#loginStatePending').html(pendingItems.map(item => buildLoginStateRow(item, 'pending')).join('') || '<div class="empty-state compact">暂无待确认项</div>');
-    const findingsMore = findingsTotal > findings.length ? `<div class="empty-state compact">结果较多，仅显示前 ${findings.length} 条；完整结果仍保留在设备中</div>` : '';
-    $('#loginStateFindings').html((findings.map(item => buildLoginStateRow(item, 'finding')).join('') + findingsMore) || '<div class="empty-state compact">暂无最近学习结果</div>');
+    $('#loginStateSummary').text(`${data.learning ? '學習中' : '未學習'} · 已確認 ${loginStatePaths.length} · 待確認 ${pendingItems.length} · 最近 ${findingsTotal}${missing ? ` · 缺失 ${missing}` : ''}`);
+    $('#loginStateLearnBtn').text(data.learning ? '完成學習' : '開始學習');
+    $('#loginStateRevealBtn').prop('disabled', pendingItems.length === 0).text(pendingItems.length ? `顯示待確認(${pendingItems.length})` : '顯示待確認');
+    $('#loginStateLearned').html(loginStatePathStates().map(item => buildLoginStateRow(item, 'selected')).join('') || '<div class="empty-state compact">未確認任何登入狀態路徑</div>');
+    $('#loginStatePending').html(pendingItems.map(item => buildLoginStateRow(item, 'pending')).join('') || '<div class="empty-state compact">暫無待確認項</div>');
+    const findingsMore = findingsTotal > findings.length ? `<div class="empty-state compact">結果較多，僅顯示前 ${findings.length} 筆；完整結果仍保留在裝置中</div>` : '';
+    $('#loginStateFindings').html((findings.map(item => buildLoginStateRow(item, 'finding')).join('') + findingsMore) || '<div class="empty-state compact">暫無最近學習結果</div>');
     renderLoginStateTrees();
 }
 
 function loginStatePathStates() {
     const byPath = {};
     ((loginStateData && loginStateData.states) || []).forEach(item => { if (item && item.path) byPath[item.path] = item; });
-    return loginStatePaths.map(path => byPath[path] || { path, displayPath: path, exists: true, file: true, size: 0, confidence: 'selected', reason: '已确认路径' });
+    return loginStatePaths.map(path => byPath[path] || { path, displayPath: path, exists: true, file: true, size: 0, confidence: 'selected', reason: '已確認路徑' });
 }
 
 function loginStateFindingByPath(path) {
@@ -808,7 +808,7 @@ function loginStatePendingItems() {
     ((loginStateData && loginStateData.findings) || []).forEach(item => { if (item && item.path) byPath[item.path] = item; });
     return ((loginStateData && loginStateData.pending) || [])
         .filter(path => loginStateState(path) !== 'checked')
-        .map(path => byPath[path] || { path, displayPath: path, confidence: 'pending', reason: '学习期间发生变化' });
+        .map(path => byPath[path] || { path, displayPath: path, confidence: 'pending', reason: '學習期間發生變化' });
 }
 
 function loginStateMeta(path) {
@@ -830,17 +830,17 @@ function loginStateFileIcon(item) {
 
 function loginStateTypeTitle(item) {
     if (!item || item.dir) return '';
-    if (item.text === true) return '文本';
-    if (item.fileType === 'binary' || item.text === false) return '非文本';
-    return '文件';
+    if (item.text === true) return '文字';
+    if (item.fileType === 'binary' || item.text === false) return '非文字';
+    return '檔案';
 }
 
 function loginStatePreviewText(data) {
     const parts = [];
     if (data.encoding) parts.push(data.encoding);
     if (data.size != null) parts.push(formatFileSize(Number(data.size || 0), false));
-    if (data.truncated) parts.push('只读预览，已截断');
-    else if (!data.editable) parts.push('只读预览');
+    if (data.truncated) parts.push('唯讀預覽，已截斷');
+    else if (!data.editable) parts.push('唯讀預覽');
     return parts.join(' · ');
 }
 
@@ -907,12 +907,12 @@ function buildLoginStateRow(item, type) {
     const confidence = type === 'selected' ? 'selected' : (item.confidence || (type === 'pending' ? 'pending' : 'low'));
     const title = confidenceTitle(confidence, type);
     const size = item.size != null ? formatFileSize(Number(item.size || 0), false) : '';
-    const reason = item.reason || (type === 'selected' ? '已确认路径' : '学习期间发生变化');
+    const reason = item.reason || (type === 'selected' ? '已確認路徑' : '學習期間發生變化');
     const display = item.displayPath || path;
     const missing = item.exists === false ? ' missing' : '';
     const action = type === 'selected'
         ? `<button class="file-action danger" type="button" onclick="removeLoginStatePath('${ep}')">移除</button>`
-        : `<button class="file-action" type="button" onclick="addLoginStatePath('${ep}')">确认</button>`;
+        : `<button class="file-action" type="button" onclick="addLoginStatePath('${ep}')">確認</button>`;
     return `<div class="login-file-row ${escHtml(type)}${missing}">
         <button class="login-file-main" type="button" onclick="openLoginStateFile('${ep}')">
             <strong>${escHtml(path)}</strong>
@@ -925,11 +925,11 @@ function buildLoginStateRow(item, type) {
 }
 
 function confidenceTitle(confidence, type = '') {
-    if (type === 'selected' || confidence === 'selected') return '已确认';
-    if (type === 'pending' || confidence === 'pending') return '待确认';
-    if (confidence === 'high') return '高置信';
-    if (confidence === 'medium') return '中置信';
-    return '低置信';
+    if (type === 'selected' || confidence === 'selected') return '已確認';
+    if (type === 'pending' || confidence === 'pending') return '待確認';
+    if (confidence === 'high') return '高信賴';
+    if (confidence === 'medium') return '中信賴';
+    return '低信賴';
 }
 
 function toggleLoginStateLearning() {
@@ -943,8 +943,8 @@ function toggleLoginStateLearning() {
         loadLoginStateTree('app');
         loadLoginStateTree('sdcard');
         renderLoginStateManage();
-        warnToast(learning ? '登录态学习完成' : '已开始登录态学习');
-    }, '登录态学习失败');
+        warnToast(learning ? '登入狀態學習完成' : '已開始登入狀態學習');
+    }, '登入狀態學習失敗');
 }
 
 function addLoginStatePath(path) {
@@ -971,15 +971,15 @@ function saveLoginStatePaths() {
         loadLoginStateTree('app');
         loadLoginStateTree('sdcard');
         renderLoginStateManage();
-        warnToast('登录态路径已保存');
-    }, '登录态路径保存失败');
+        warnToast('登入狀態路徑已儲存');
+    }, '登入狀態路徑儲存失敗');
 }
 
 function openLoginStateFile(path) {
     if (!path) return;
     const meta = loginStateMeta(path);
     if (meta && meta.text === false) {
-        warnToast('非文本文件不能查看内容');
+        warnToast('非文字檔案不能檢視內容');
         return;
     }
     postJson('/manage/login-state/file', { path }, data => {
@@ -989,13 +989,13 @@ function openLoginStateFile(path) {
         renderLoginStatePreviewContent(data);
         openDialog('loginStateEditorDialog');
         if (currentLoginStateEditable) setTimeout(() => $('#loginStateContent').trigger('focus'), 80);
-    }, '登录态文件读取失败');
+    }, '登入狀態檔案讀取失敗');
 }
 
 function saveLoginStateFile() {
     if (!currentLoginStatePath) return;
     if (!currentLoginStateEditable) {
-        warnToast('只读预览不能保存');
+        warnToast('唯讀預覽不能儲存');
         return;
     }
     const content = $('#loginStateContent').val();
@@ -1004,8 +1004,8 @@ function saveLoginStateFile() {
         renderLoginStatePreviewContent(data);
         addLoginStatePath(data.path || currentLoginStatePath);
         saveLoginStatePaths();
-        warnToast('登录态文件已保存');
-    }, '登录态文件保存失败');
+        warnToast('登入狀態檔案已儲存');
+    }, '登入狀態檔案儲存失敗');
     closeDialog('loginStateEditorDialog');
 }
 
@@ -1085,7 +1085,7 @@ function loadLoginStateTree(path, callback) {
         loginStateTreeCache[path] = data || { path, items: [] };
         renderLoginStateManage();
         if (callback) callback(loginStateTreeCache[path]);
-    }, '登录态目录加载失败');
+    }, '登入狀態目錄載入失敗');
 }
 function toggleLoginStateTree(path) {
     path = loginStateNormalize(path);
@@ -1102,7 +1102,7 @@ function toggleLoginStateTree(path) {
 function revealLoginStatePending() {
     const items = loginStatePendingItems();
     if (!items.length) {
-        warnToast('没有待确认项');
+        warnToast('沒有待確認項');
         return;
     }
     items.forEach(item => expandLoginStatePath(item.path));
@@ -1110,7 +1110,7 @@ function revealLoginStatePending() {
     loadLoginStateTree('app');
     loadLoginStateTree('sdcard');
     renderLoginStateManage();
-    warnToast(`已显示 ${items.length} 个待确认项`);
+    warnToast(`已顯示 ${items.length} 個待確認項`);
 }
 function renderLoginStateTrees() {
     renderLoginStateTree('app', $('#loginStateTreeApp'));
@@ -1121,13 +1121,13 @@ function renderLoginStateTree(root, targetEl) {
     const rows = [];
     buildLoginStateTreeRows(root, 0, rows);
     appendMissingLoginStateRows(root, rows);
-    targetEl.html(rows.join('') || '<div class="empty-state compact">没有可显示的文件</div>');
+    targetEl.html(rows.join('') || '<div class="empty-state compact">沒有可顯示的檔案</div>');
     targetEl.find('input[data-partial="1"]').each(function () { this.indeterminate = true; });
 }
 function buildLoginStateTreeRows(path, depth, rows) {
     const tree = loginStateTreeCache[path];
     if (!tree) {
-        rows.push(`<div class="login-tree-row muted" style="--depth:${depth}"><span class="login-tree-spacer"></span><span class="tree-check login-tree-check"></span><div class="login-tree-main"><span>加载中...</span></div></div>`);
+        rows.push(`<div class="login-tree-row muted" style="--depth:${depth}"><span class="login-tree-spacer"></span><span class="tree-check login-tree-check"></span><div class="login-tree-main"><span>載入中...</span></div></div>`);
         if (!loginStateTreeLoading.has(path)) loadLoginStateTree(path);
         return;
     }
@@ -1135,7 +1135,7 @@ function buildLoginStateTreeRows(path, depth, rows) {
         rows.push(buildLoginStateTreeRow(item, depth));
         if (item.dir && loginStateExpanded.has(item.path)) buildLoginStateTreeRows(item.path, depth + 1, rows);
     });
-    if (tree.truncated) rows.push(`<div class="login-tree-row muted" style="--depth:${depth + 1}"><span class="login-tree-spacer"></span><span class="tree-check login-tree-check"></span><div class="login-tree-main"><span>目录共 ${Number(tree.total || 0)} 项，仅显示前 ${(tree.items || []).length} 项；可直接选择文件夹</span></div></div>`);
+    if (tree.truncated) rows.push(`<div class="login-tree-row muted" style="--depth:${depth + 1}"><span class="login-tree-spacer"></span><span class="tree-check login-tree-check"></span><div class="login-tree-main"><span>目錄共 ${Number(tree.total || 0)} 項，僅顯示前 ${(tree.items || []).length} 項；可直接選擇資料夾</span></div></div>`);
 }
 function appendMissingLoginStateRows(root, rows) {
     const visible = new Set();
@@ -1164,15 +1164,15 @@ function buildLoginStateTreeRow(item, depth) {
     const missing = item.missing || (((loginStateData && loginStateData.states) || []).some(x => x && x.path === path && x.exists === false));
     const checked = state === 'checked' ? ' checked' : '';
     const partial = state === 'partial' ? ' data-partial="1"' : '';
-    const stateBadge = missing ? '<span class="login-state-badge missing">缺失</span>' : pending ? '<span class="login-state-badge pending">待确认</span>' : hasPending ? '<span class="login-state-badge pending">含待确认</span>' : state === 'checked' ? '<span class="login-state-badge selected">已选</span>' : state === 'partial' ? '<span class="login-state-badge partial">部分</span>' : '';
+    const stateBadge = missing ? '<span class="login-state-badge missing">缺失</span>' : pending ? '<span class="login-state-badge pending">待確認</span>' : hasPending ? '<span class="login-state-badge pending">含待確認</span>' : state === 'checked' ? '<span class="login-state-badge selected">已選</span>' : state === 'partial' ? '<span class="login-state-badge partial">部分</span>' : '';
     const typeTitle = loginStateTypeTitle(item);
     const typeBadge = typeTitle && !missing ? `<span class="login-state-badge file-type ${item.text === true ? 'text' : 'binary'}">${escHtml(typeTitle)}</span>` : '';
-    const toggle = item.dir ? `<button class="login-tree-toggle" type="button" onclick="toggleLoginStateTree('${ep}')" aria-label="${loginStateExpanded.has(path) ? '收起' : '展开'}">${loginStateExpanded.has(path) ? '−' : '+'}</button>` : '<span class="login-tree-toggle placeholder"></span>';
+    const toggle = item.dir ? `<button class="login-tree-toggle" type="button" onclick="toggleLoginStateTree('${ep}')" aria-label="${loginStateExpanded.has(path) ? '收合' : '展開'}">${loginStateExpanded.has(path) ? '−' : '+'}</button>` : '<span class="login-tree-toggle placeholder"></span>';
     const icon = loginStateFileIcon(item);
     const click = item.dir ? `toggleLoginStateTree('${ep}')` : `openLoginStateFile('${ep}')`;
     return `<div class="login-tree-row ${item.dir ? 'dir' : 'file'} ${pending || hasPending ? 'pending' : ''} ${missing ? 'missing' : ''}" style="--depth:${depth}" data-path="${escHtml(path)}">
         ${toggle}
-        <label class="tree-check login-tree-check"><input type="checkbox" onchange="toggleLoginStatePath('${ep}',this.checked)"${checked}${partial} aria-label="选择 ${escHtml(item.name || path)}"></label>
+        <label class="tree-check login-tree-check"><input type="checkbox" onchange="toggleLoginStatePath('${ep}',this.checked)"${checked}${partial} aria-label="選擇 ${escHtml(item.name || path)}"></label>
         <button class="login-tree-main" type="button" onclick="${click}">
             <img class="file-icon" src="${icon}" alt="">
             <span class="login-tree-name">${escHtml(item.name || path)}</span>
@@ -1200,7 +1200,7 @@ function toggleSyncSelection() {
 function updateSyncPathsVisible() {
     const spider = $('#syncOptSpider').prop('checked');
     $('#syncPathsPanel').toggle(spider);
-    $('#syncSelectBtn').text(allSyncSelected() ? '取消全选' : '全选');
+    $('#syncSelectBtn').text(allSyncSelected() ? '取消全選' : '全選');
 }
 function syncOptionsPayload() {
     return {
@@ -1217,7 +1217,7 @@ function syncOptionsPayload() {
 }
 function startSyncManage() {
     if (!target) {
-        warnToast('请先选择远端设备');
+        warnToast('請先選擇遠端裝置');
         devicePanelOpen = true;
         updateRemotePicker();
         loadDevices();
@@ -1225,11 +1225,11 @@ function startSyncManage() {
     }
     const options = syncOptionsPayload();
     if (!Object.keys(options).some(key => key !== 'paths' && options[key])) {
-        warnToast('至少选择一项同步内容');
+        warnToast('至少選擇一項同步內容');
         return;
     }
     if (isRemoteOffline(target)) {
-        warnToast('远端设备离线，已停止同步');
+        warnToast('遠端裝置離線，已停止同步');
         pingRemote(true);
         return;
     }
@@ -1246,10 +1246,10 @@ function startSyncManage() {
             try { data = parseJson(res); } catch (e) {}
             const fileCount = Number(data.files || 0) + Number(data.loginFiles || 0);
             const zipSize = Number(data.zipSize || 0) + Number(data.loginZipSize || 0);
-            const detail = fileCount ? ` · ${fileCount} 个文件 · ${formatFileSize(zipSize, false)}` : '';
+            const detail = fileCount ? ` · ${fileCount} 個檔案 · ${formatFileSize(zipSize, false)}` : '';
             warnToast((syncMode === 'push' ? '推送完成' : '拉取已完成') + detail);
         })
-        .fail((xhr, status) => warnToast(requestError(xhr, status, '同步失败')))
+        .fail((xhr, status) => warnToast(requestError(xhr, status, '同步失敗')))
         .always(hideLoading);
 }
 
@@ -1308,7 +1308,7 @@ function assignOptionalJson(object, key, value) {
     else object[key] = value;
 }
 function buildFieldLabel(text, required = false, note = '') {
-    const tag = required ? '必填' : '可选';
+    const tag = required ? '必填' : '可選';
     const cls = required ? 'required-label' : 'optional-label';
     return `<label class="form-label live-field-label ${cls}">${escHtml(text)}<span>${escHtml(note || tag)}</span></label>`;
 }
@@ -1555,8 +1555,8 @@ function stripCspMeta(registry) {
 function renderCspManage() {
     $('#cspEnabled').prop('checked', cspRegistry.enabled !== false);
     $('#cspInsertText').text((cspRegistry.insertIndex || 0) + 1);
-    $('#cspSummary').text(`${cspRegistry.active || 0}/${cspRegistry.enabledCount || 0} 可用 · ${cspRegistry.items.length} 条`);
-    $('#cspList').html(cspRegistry.items.map(buildCspCard).join('') || '<div class="empty-state">还没有站点注入条目</div>');
+    $('#cspSummary').text(`${cspRegistry.active || 0}/${cspRegistry.enabledCount || 0} 可用 · ${cspRegistry.items.length} 條`);
+    $('#cspList').html(cspRegistry.items.map(buildCspCard).join('') || '<div class="empty-state">還沒有站點注入項目</div>');
     $('#cspRaw').val(JSON.stringify(stripCspMeta(cspRegistry), null, 2));
     cspRawDirty = false;
     updateCspModeUi();
@@ -1569,7 +1569,7 @@ function cspItemValid(item) {
 function buildCspCard(item, index) {
     const invalid = item.enabled && (!cspItemValid(item) || item.extensionsInvalid) ? ' invalid' : '';
     const title = item.name || cspKindName(item.kind);
-    const source = item.webHome ? `<div class="source-actions"><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="chooseCspFile(${index})">文件</button><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="openCspCode(${index})">代码</button><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="openCspLink(${index})">链接</button></div>` : '';
+    const source = item.webHome ? `<div class="source-actions"><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="chooseCspFile(${index})">檔案</button><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="openCspCode(${index})">程式碼</button><button class="md-btn md-btn-tonal md-btn-compact" type="button" onclick="openCspLink(${index})">連結</button></div>` : '';
     const typeButtons = `<div class="segmented csp-type-toggle"><button class="segment ${item.kind === 'webHome' ? 'active' : ''}" onclick="setCspKind(${index},'webHome')" type="button">WebHome</button><button class="segment ${item.kind === 'csp' ? 'active' : ''}" onclick="setCspKind(${index},'csp')" type="button">通用 CSP</button><button class="segment ${item.kind === 'live' ? 'active' : ''}" onclick="setCspKind(${index},'live')" type="button">直播</button><button class="segment ${item.kind === 'other' ? 'active' : ''}" onclick="setCspKind(${index},'other')" type="button">其他</button></div>`;
     const nameRow = item.kind === 'live'
         ? `<div class="field-row compact">${buildLiveTextField('name', 'name', item.name, 'name', true)}</div>`
@@ -1580,7 +1580,7 @@ function buildCspCard(item, index) {
     const homeLine = (item.kind === 'live' || item.kind === 'other') ? '' : `<div class="csp-home-line">${buildHomeCheck(item, index)}${source}</div>`;
     const homePage = (item.kind === 'live' || item.kind === 'other') ? '' : `<div class="md-field"><input class="md-input csp-field" data-key="homePage" value="${escHtml(item.homePage)}" placeholder="homePage"></div>`;
     const fields = item.kind === 'other' ? buildOtherFields(item, index) : item.kind === 'live' ? buildLiveFields(item) : item.webHome ? buildAdvancedSiteFields(item) : buildCommonCspFields(item);
-    return `<div class="manage-card csp-card${invalid}" data-index="${index}"><div class="csp-head"><div class="csp-title-block"><label class="check-row"><input class="csp-field" data-key="enabled" type="checkbox" ${item.enabled ? 'checked' : ''}><span>${escHtml(title)}</span></label>${typeButtons}</div><div class="card-actions"><button class="file-action" type="button" onclick="moveCspItem(${index},-1)">上移</button><button class="file-action" type="button" onclick="moveCspItem(${index},1)">下移</button><button class="file-action danger" type="button" onclick="removeCspItem(${index})">删除</button></div></div>${nameRow}${extensions}${homeLine}${homePage}${fields}</div>`;
+    return `<div class="manage-card csp-card${invalid}" data-index="${index}"><div class="csp-head"><div class="csp-title-block"><label class="check-row"><input class="csp-field" data-key="enabled" type="checkbox" ${item.enabled ? 'checked' : ''}><span>${escHtml(title)}</span></label>${typeButtons}</div><div class="card-actions"><button class="file-action" type="button" onclick="moveCspItem(${index},-1)">上移</button><button class="file-action" type="button" onclick="moveCspItem(${index},1)">下移</button><button class="file-action danger" type="button" onclick="removeCspItem(${index})">刪除</button></div></div>${nameRow}${extensions}${homeLine}${homePage}${fields}</div>`;
 }
 function buildOtherFields(item, index) {
     const options = CSP_ROOT_OTHER_FIELDS.includes(item.otherField) ? CSP_ROOT_OTHER_FIELDS : [item.otherField, ...CSP_ROOT_OTHER_FIELDS];
@@ -1590,11 +1590,11 @@ function buildOtherFields(item, index) {
         : `<textarea class="code-area csp-field compact-code" data-key="otherText" spellcheck="false" placeholder="${escHtml(item.otherField)} JSON">${escHtml(item.otherText)}</textarea>`;
     return `<details class="advanced-panel" open><summary>other</summary><label class="form-label">field</label>${select}<label class="form-label">${escHtml(item.otherField)}${CSP_OTHER_STRING_FIELDS.includes(item.otherField) ? '' : ' JSON'}</label>${value}</details>`;
 }
-function buildHomeCheck(item, index) { return `<label class="check-row"><input class="csp-home" type="checkbox" ${cspRegistry.homeKey === item.key ? 'checked' : ''} onchange="setCspHome(${index},this.checked)"><span>设为首页</span></label>`; }
+function buildHomeCheck(item, index) { return `<label class="check-row"><input class="csp-home" type="checkbox" ${cspRegistry.homeKey === item.key ? 'checked' : ''} onchange="setCspHome(${index},this.checked)"><span>設為首頁</span></label>`; }
 function buildCspExtensionsFields(item, index) {
     const text = item.extensionsText || '';
-    const detail = item.extensionsExpanded ? `<textarea class="code-area csp-field compact-code csp-extensions-text" data-key="extensionsText" spellcheck="false" placeholder='["https://example.com/webhome/site.js"]'>${escHtml(text)}</textarea>${item.extensionsInvalid ? '<div class="field-error">extensions JSON 格式无效</div>' : ''}` : '';
-    return `<div class="csp-extensions-panel"><div class="csp-extensions-head"><button class="toggle-pill ${item.extensionsExpanded ? 'on' : 'off'}" type="button" onclick="toggleCspExtensions(${index})">扩展</button><span>填写 extensions 数组，支持 JS 链接简写或对象配置</span></div>${detail}</div>`;
+    const detail = item.extensionsExpanded ? `<textarea class="code-area csp-field compact-code csp-extensions-text" data-key="extensionsText" spellcheck="false" placeholder='["https://example.com/webhome/site.js"]'>${escHtml(text)}</textarea>${item.extensionsInvalid ? '<div class="field-error">extensions JSON 格式無效</div>' : ''}` : '';
+    return `<div class="csp-extensions-panel"><div class="csp-extensions-head"><button class="toggle-pill ${item.extensionsExpanded ? 'on' : 'off'}" type="button" onclick="toggleCspExtensions(${index})">擴展</button><span>填寫 extensions 陣列，支援 JS 連結簡寫或物件設定</span></div>${detail}</div>`;
 }
 function buildCommonCspFields(item) {
     return `<div class="field-row compact"><input class="md-input mini-input csp-field" data-key="type" type="number" value="${escHtml(item.type)}" placeholder="type"><input class="md-input csp-field" data-key="api" value="${escHtml(item.api)}" placeholder="api"></div><div class="field-row compact"><input class="md-input csp-field" data-key="jar" value="${escHtml(item.jar)}" placeholder="jar"><input class="md-input csp-field" data-key="ext" value="${escHtml(typeof item.ext === 'string' ? item.ext : JSON.stringify(item.ext))}" placeholder="ext"></div><div class="field-row compact"><input class="md-input csp-field" data-key="click" value="${escHtml(item.click)}" placeholder="click"><input class="md-input csp-field" data-key="playUrl" value="${escHtml(item.playUrl)}" placeholder="playUrl"></div><div class="field-row compact"><input class="md-input mini-input csp-field" data-key="indexs" type="number" value="${escHtml(item.indexs)}" placeholder="indexs"><input class="md-input mini-input csp-field" data-key="timeout" type="number" value="${escHtml(item.timeout)}" placeholder="timeout"><input class="md-input csp-field" data-key="categories" value="${escHtml((item.categories || []).join(','))}" placeholder="categories"></div><div class="flag-grid"><label class="check-row"><input class="csp-field" data-key="hide" type="checkbox" ${item.hide ? 'checked' : ''}><span>hide</span></label><label class="check-row"><input class="csp-field" data-key="searchable" type="checkbox" ${item.searchable ? 'checked' : ''}><span>searchable</span></label><label class="check-row"><input class="csp-field" data-key="changeable" type="checkbox" ${item.changeable ? 'checked' : ''}><span>changeable</span></label><label class="check-row"><input class="csp-field" data-key="quickSearch" type="checkbox" ${item.quickSearch ? 'checked' : ''}><span>quickSearch</span></label></div><details class="advanced-panel"><summary>advanced</summary><label class="form-label">header JSON</label><textarea class="code-area csp-field compact-code" data-key="headerText" spellcheck="false" placeholder="header JSON">${escHtml(item.headerText)}</textarea><label class="form-label">style JSON</label><textarea class="code-area csp-field compact-code" data-key="styleText" spellcheck="false" placeholder="style JSON">${escHtml(item.styleText)}</textarea>${buildAdvancedSiteFields(item, false)}</details>`;
@@ -1640,7 +1640,7 @@ function parseCspRawIntoRegistry() {
         cspRawDirty = false;
         return true;
     } catch (e) {
-        warnToast('站点注入 JSON 格式无效');
+        warnToast('站點注入 JSON 格式無效');
         return false;
     }
 }
@@ -1699,7 +1699,7 @@ function syncCspFromCards(updateRaw = true, validate = false) {
         if (!item.extensionsInvalid) syncCspItem(item);
     });
     if (validate && !valid) {
-        warnToast('extensions JSON 格式无效');
+        warnToast('extensions JSON 格式無效');
         renderCspManage();
         return false;
     }
@@ -1709,10 +1709,10 @@ function syncCspFromCards(updateRaw = true, validate = false) {
     }
     return true;
 }
-function parseJsonField(text, fallback) { try { return text && text.trim() ? JSON.parse(text) : fallback; } catch (e) { warnToast('JSON 格式无效，已保留为空对象'); return fallback; } }
+function parseJsonField(text, fallback) { try { return text && text.trim() ? JSON.parse(text) : fallback; } catch (e) { warnToast('JSON 格式無效，已保留為空物件'); return fallback; } }
 function parseOptionalJsonField(text, fallback, emptyValue) {
     try { return text && text.trim() ? JSON.parse(text) : emptyValue; }
-    catch (e) { warnToast('JSON 格式无效，已保留原值'); return fallback; }
+    catch (e) { warnToast('JSON 格式無效，已保留原值'); return fallback; }
 }
 function parseCspExtensions(text) {
     const value = String(text || '').trim();
@@ -1816,8 +1816,8 @@ function onCspFileSelected() {
     const file = $('#csp_file_uploader')[0].files[0];
     if (!file || pendingCspIndex < 0) return;
     const reader = new FileReader();
-    reader.onload = e => saveCspPage(pendingCspIndex, { code: e.target.result || '' }, '文件已载入');
-    reader.onerror = () => warnToast('文件读取失败');
+    reader.onload = e => saveCspPage(pendingCspIndex, { code: e.target.result || '' }, '檔案已載入');
+    reader.onerror = () => warnToast('檔案讀取失敗');
     reader.readAsText(file);
 }
 function openCspCode(index) {
@@ -1829,7 +1829,7 @@ function openCspCode(index) {
 function confirmCspCode(yes) {
     closeDialog('cspCodeDialog');
     if (yes !== 1 || pendingCspIndex < 0) return;
-    saveCspPage(pendingCspIndex, { code: $('#cspCodeContent').val() }, '代码已保存');
+    saveCspPage(pendingCspIndex, { code: $('#cspCodeContent').val() }, '程式碼已儲存');
 }
 function openCspLink(index) {
     syncCspFromCards(false);
@@ -1842,7 +1842,7 @@ function confirmCspLink(yes) {
     closeDialog('cspLinkDialog');
     const link = $('#cspLinkContent').val().trim();
     if (yes !== 1 || pendingCspIndex < 0 || !link) return;
-    saveCspPage(pendingCspIndex, { link }, '链接已设置');
+    saveCspPage(pendingCspIndex, { link }, '連結已設定');
 }
 function saveCspPage(index, data, message) {
     const item = cspRegistry && cspRegistry.items[index];
@@ -1852,16 +1852,16 @@ function saveCspPage(index, data, message) {
         item.homePage = res.homePage || item.homePage;
         syncCspSite(item);
         renderCspManage();
-        warnToast(message || 'WebHome 已更新，请保存生效');
+        warnToast(message || 'WebHome 已更新，請儲存生效');
         pendingCspIndex = -1;
-    }, 'WebHome 保存失败');
+    }, 'WebHome 儲存失敗');
 }
 function saveCspManage() {
     if (cspMode === 'form') {
         if (!syncCspFromCards(true, true)) return;
     } else if (!parseCspRawIntoRegistry()) return;
     cspRegistry.items.forEach(syncCspItem);
-    postJson('/manage/csp', { registry: JSON.stringify(stripCspMeta(cspRegistry)) }, data => { cspRegistry = normalizeCspRegistry(data); renderCspManage(); warnToast('站点注入已保存'); });
+    postJson('/manage/csp', { registry: JSON.stringify(stripCspMeta(cspRegistry)) }, data => { cspRegistry = normalizeCspRegistry(data); renderCspManage(); warnToast('站點注入已儲存'); });
 }
 
 function loadProxyManage(force = false) {
@@ -1878,10 +1878,10 @@ function loadProxyManage(force = false) {
 function updateProxySummary(data = {}) {
     const count = data.count != null ? data.count : proxyRules.filter(rule => rule.hosts || rule.url).length;
     const configured = count > 0 || !!cleanProxyUrl($('#proxyUrl').val());
-    $('#proxySummary').text(`${proxyEnabled ? '启用' : '禁用'} · ${count || 0} 条 · ${configured ? '已配置' : '未配置'}`);
+    $('#proxySummary').text(`${proxyEnabled ? '啟用' : '停用'} · ${count || 0} 條 · ${configured ? '已設定' : '未設定'}`);
 }
 function renderProxyManage(data = {}) {
-    $('#proxyEnabled').text(proxyEnabled ? '启用' : '禁用').toggleClass('on', proxyEnabled).toggleClass('off', !proxyEnabled);
+    $('#proxyEnabled').text(proxyEnabled ? '啟用' : '停用').toggleClass('on', proxyEnabled).toggleClass('off', !proxyEnabled);
     $('#proxyModeForm').toggleClass('active', proxyMode === 'form');
     $('#proxyModeText').toggleClass('active', proxyMode === 'text');
     $('#proxyFormPanel').toggle(proxyMode === 'form');
@@ -1904,7 +1904,7 @@ function setProxyMode(next) {
 }
 function proxyRule(hosts, url) { return { hosts: hosts || '', url: url || '' }; }
 function buildProxyRule(rule, index) {
-    return `<div class="proxy-rule-card" data-index="${index}"><div class="proxy-rule-head"><span>规则 ${index + 1}</span><div class="card-actions"><button class="file-action" onclick="moveProxyRule(${index},-1)" type="button">上移</button><button class="file-action" onclick="moveProxyRule(${index},1)" type="button">下移</button><button class="file-action danger" onclick="removeProxyRule(${index})" type="button">删除</button></div></div><div class="proxy-rule-fields"><div><label class="form-label">域名 / Host</label><input class="md-input proxy-rule-hosts" value="${escHtml(rule.hosts)}" placeholder="例如 * 或 api.example.com,*.example.org"></div><div><label class="form-label">代理地址</label><input class="md-input proxy-rule-url" value="${escHtml(rule.url)}" placeholder="留空时使用默认代理地址"></div></div></div>`;
+    return `<div class="proxy-rule-card" data-index="${index}"><div class="proxy-rule-head"><span>規則 ${index + 1}</span><div class="card-actions"><button class="file-action" onclick="moveProxyRule(${index},-1)" type="button">上移</button><button class="file-action" onclick="moveProxyRule(${index},1)" type="button">下移</button><button class="file-action danger" onclick="removeProxyRule(${index})" type="button">刪除</button></div></div><div class="proxy-rule-fields"><div><label class="form-label">網域 / Host</label><input class="md-input proxy-rule-hosts" value="${escHtml(rule.hosts)}" placeholder="例如 * 或 api.example.com,*.example.org"></div><div><label class="form-label">代理位址</label><input class="md-input proxy-rule-url" value="${escHtml(rule.url)}" placeholder="留空時使用預設代理位址"></div></div></div>`;
 }
 function syncProxyRulesFromForm() {
     const items = [];
@@ -1928,18 +1928,18 @@ function showProxySuggestDialog() {
         proxySuggestSites = Array.isArray(data.sites) ? data.sites : [];
         renderProxySuggestList();
         openDialog('proxySuggestDialog');
-    }, '自动建议加载失败');
+    }, '自動建議載入失敗');
 }
 function renderProxySuggestList() {
     const rows = [];
-    if (proxySuggestSites.length) rows.push(buildProxySuggestRow({ key: 'all', name: '全部站点', home: false, all: true }));
+    if (proxySuggestSites.length) rows.push(buildProxySuggestRow({ key: 'all', name: '全部站點', home: false, all: true }));
     proxySuggestSites.forEach(site => rows.push(buildProxySuggestRow(site)));
-    $('#proxySuggestList').html(rows.length ? rows.join('') : '<div class="empty-state compact">暂无可选站点</div>');
+    $('#proxySuggestList').html(rows.length ? rows.join('') : '<div class="empty-state compact">暫無可選站點</div>');
 }
 function buildProxySuggestRow(site) {
     const key = escPath(site.key || '');
-    const name = escHtml(site.name || site.key || '未命名站点');
-    const meta = site.all ? '扫描当前接口内所有站点' : (site.home ? '当前首页站点' : escHtml(site.key || ''));
+    const name = escHtml(site.name || site.key || '未命名站點');
+    const meta = site.all ? '掃描目前接口內所有站點' : (site.home ? '目前首頁站點' : escHtml(site.key || ''));
     return `<button class="proxy-suggest-row" onclick="applyProxySuggest('${key}',${site.all ? 'true' : 'false'})" type="button"><span>${name}</span><small>${meta}</small></button>`;
 }
 function applyProxySuggest(key, all) {
@@ -1947,14 +1947,14 @@ function applyProxySuggest(key, all) {
     const query = targetQuery(all ? { all: 'true' } : { key });
     getJson('/manage/proxy/suggest?' + query, data => {
         const hosts = Array.isArray(data.hosts) ? data.hosts : [];
-        if (!hosts.length) { warnToast('未发现可代理域名'); return; }
+        if (!hosts.length) { warnToast('未發現可代理網域'); return; }
         const added = appendProxyHosts(hosts, cleanProxyUrl($('#proxyUrl').val()));
         proxyEnabled = true;
         proxyMode = 'form';
         renderProxyManage({ count: proxyRules.filter(rule => rule.hosts || rule.url).length });
         closeDialog('proxySuggestDialog');
-        warnToast(`已新增 ${added} 个域名，共 ${countProxyHosts()} 个`);
-    }, '自动建议失败');
+        warnToast(`已新增 ${added} 個網域，共 ${countProxyHosts()} 個`);
+    }, '自動建議失敗');
 }
 function showProxyRecognizeDialog() {
     $('#proxyRecognizeInput').val('');
@@ -1963,7 +1963,7 @@ function showProxyRecognizeDialog() {
 function applyProxyRecognize() {
     const text = $('#proxyRecognizeInput').val();
     const items = parseProxyDetectedRules(text, true);
-    if (!items.length) { warnToast('未识别到 Proxy 规则'); return; }
+    if (!items.length) { warnToast('未識別到 Proxy 規則'); return; }
     if (proxyMode === 'text') proxyRules = parseProxyRules($('#proxyRules').val());
     else syncProxyRulesFromForm();
     const before = proxyRules.filter(rule => rule.hosts || rule.url).length;
@@ -1976,11 +1976,11 @@ function applyProxyRecognize() {
     $('#proxyRules').val(formatProxyRules(proxyRules));
     renderProxyManage({ count: proxyRules.filter(rule => rule.hosts || rule.url).length });
     closeDialog('proxyRecognizeDialog');
-    warnToast(`已识别 ${items.length} 条，新增 ${Math.max(added, 0)} 条`);
+    warnToast(`已識別 ${items.length} 條，新增 ${Math.max(added, 0)} 條`);
 }
 function ensureProxyDefaultUrl() {
     if (isValidProxyUrl(cleanProxyUrl($('#proxyUrl').val()))) return true;
-    warnToast('请先填写默认代理地址');
+    warnToast('請先填寫預設代理位址');
     return false;
 }
 function isValidProxyUrl(url) {
@@ -2070,7 +2070,7 @@ function parseProxyDetectedRules(text, notifyInvalid = false) {
         items = parseProxyJson(`[${objects.join(',')}]`, false);
         if (items.length) return items;
     }
-    if (notifyInvalid && (raw[0] === '{' || raw[0] === '[' || raw.includes('"proxy"'))) warnToast('Proxy JSON 格式无效');
+    if (notifyInvalid && (raw[0] === '{' || raw[0] === '[' || raw.includes('"proxy"'))) warnToast('Proxy JSON 格式無效');
     return [];
 }
 function parseProxyJson(text, notifyInvalid = true) {
@@ -2079,7 +2079,7 @@ function parseProxyJson(text, notifyInvalid = true) {
         const array = Array.isArray(root) ? root : (Array.isArray(root.proxy) ? root.proxy : [root]);
         return array.map(item => proxyRule(joinProxyValue(item.hosts), joinProxyValue(item.urls))).filter(item => item.hosts || item.url);
     } catch (e) {
-        if (notifyInvalid) warnToast('Proxy JSON 格式无效');
+        if (notifyInvalid) warnToast('Proxy JSON 格式無效');
         return [];
     }
 }
@@ -2227,8 +2227,8 @@ function saveProxyManage() {
         proxyRules = parseProxyRules(data.rules || rules);
         $('#proxyRules').val(formatProxyRules(proxyRules));
         renderProxyManage(data);
-        warnToast('Proxy 已保存');
-    }, 'Proxy 保存失败');
+        warnToast('Proxy 已儲存');
+    }, 'Proxy 儲存失敗');
 }
 
 function loadConfigsManage(force = false) {
@@ -2237,16 +2237,16 @@ function loadConfigsManage(force = false) {
         configsLoadedKey = activeKey();
         configsData = Array.isArray(data.items) ? data.items : [];
         renderConfigsManage();
-    }, '接口配置加载失败');
+    }, '接口設定載入失敗');
 }
 function renderConfigsManage() {
     const filtered = configsData.filter(item => Number(item.type || 0) === Number(configFilter));
     const active = configsData.filter(item => item.active).length;
-    $('#configsSummary').text(`${configsData.length} 个接口 · 当前启用 ${active}`);
+    $('#configsSummary').text(`${configsData.length} 個接口 · 目前啟用 ${active}`);
     $('#configFilterVod').toggleClass('active', configFilter === 0);
     $('#configFilterLive').toggleClass('active', configFilter === 1);
     $('#configFilterWall').toggleClass('active', configFilter === 2);
-    $('#configList').html(filtered.map(buildConfigCard).join('') || '<div class="empty-state">暂无接口配置</div>');
+    $('#configList').html(filtered.map(buildConfigCard).join('') || '<div class="empty-state">暫無接口設定</div>');
 }
 function setConfigFilter(type) {
     configFilter = Number(type);
@@ -2260,20 +2260,20 @@ function buildConfigCard(item) {
     const active = item.active ? ' active' : '';
     return `<div class="config-card${active}">
         <div class="config-main">
-            <div class="config-title-line"><span class="config-type">${escHtml(item.typeName || configTypeName(type))}</span><strong>${escHtml(title)}</strong>${item.active ? '<em>当前</em>' : ''}</div>
+            <div class="config-title-line"><span class="config-type">${escHtml(item.typeName || configTypeName(type))}</span><strong>${escHtml(title)}</strong>${item.active ? '<em>目前</em>' : ''}</div>
             <div class="config-url">${escHtml(url)}</div>
         </div>
         <div class="config-actions">
-            <button class="file-action" type="button" onclick="useConfig(${type},'${escPath(url)}')"${item.active ? ' disabled' : ''}>启用</button>
-            <button class="file-action" type="button" onclick="showConfigDialog(${type},'${escPath(url)}','${escPath(name)}')">编辑</button>
-            <button class="file-action danger" type="button" onclick="deleteConfig(${type},'${escPath(url)}')">删除</button>
+            <button class="file-action" type="button" onclick="useConfig(${type},'${escPath(url)}')"${item.active ? ' disabled' : ''}>啟用</button>
+            <button class="file-action" type="button" onclick="showConfigDialog(${type},'${escPath(url)}','${escPath(name)}')">編輯</button>
+            <button class="file-action danger" type="button" onclick="deleteConfig(${type},'${escPath(url)}')">刪除</button>
         </div>
     </div>`;
 }
 function configTypeName(type) {
     if (Number(type) === 1) return '直播';
-    if (Number(type) === 2) return '壁纸';
-    return '影视';
+    if (Number(type) === 2) return '桌布';
+    return '影視';
 }
 function showConfigDialog(type = null, url = '', name = '') {
     const editing = !!url;
@@ -2283,9 +2283,9 @@ function showConfigDialog(type = null, url = '', name = '') {
     $('#configTypeRow').toggle(!editing);
     $('#configName').val(name || '');
     $('#configUrl').val(url || '');
-    $('#configAesKey').val('').attr('placeholder', editing ? '留空表示不修改现有密钥' : '接口返回内容需 AES-256-CBC 加密时填写');
-    $('#configAesIv').val('').attr('placeholder', editing ? '留空表示不修改现有 IV' : '16 字节初始向量');
-    $('#configDialogTitle').text(editing ? '编辑接口' : '新增接口');
+    $('#configAesKey').val('').attr('placeholder', editing ? '留空表示不修改現有密鑰' : '接口回傳內容需 AES-256-CBC 加密時填寫');
+    $('#configAesIv').val('').attr('placeholder', editing ? '留空表示不修改現有 IV' : '16 位元組初始向量');
+    $('#configDialogTitle').text(editing ? '編輯接口' : '新增接口');
     openDialog('configDialog');
 }
 function chooseConfigLocalFile() {
@@ -2309,9 +2309,9 @@ function onConfigLocalFileSelected() {
             const path = CONFIG_UPLOAD_DIR + '/' + file.name;
             const prefix = Number($('#configType').val() || 0) === 2 ? 'file:/' : 'file://';
             $('#configUrl').val(prefix + path);
-            warnToast('文件已上传并填入接口地址');
+            warnToast('檔案已上傳並填入接口位址');
         })
-        .fail((xhr, status) => warnToast(requestError(xhr, status, '本地文件上传失败')))
+        .fail((xhr, status) => warnToast(requestError(xhr, status, '本機檔案上傳失敗')))
         .always(() => { $('#config_file_uploader').val(''); hideLoading(); });
 }
 function saveConfigDialog() {
@@ -2320,7 +2320,7 @@ function saveConfigDialog() {
     const url = $('#configUrl').val().trim();
     const aesKey = $('#configAesKey').val().trim();
     const aesIv = $('#configAesIv').val().trim();
-    if (!url) { warnToast('请填写接口地址'); return; }
+    if (!url) { warnToast('請填寫接口位址'); return; }
     const oldUrl = editingConfig && editingConfig.oldUrl && editingConfig.oldUrl !== url ? editingConfig.oldUrl : '';
     const save = () => postJson('/manage/configs', { type, name, url, aesKey, aesIv }, data => {
         configsData = data.items || [];
@@ -2328,9 +2328,9 @@ function saveConfigDialog() {
         configFilter = type;
         renderConfigsManage();
         closeDialog('configDialog');
-        warnToast('接口已保存');
-    }, '接口保存失败');
-    if (oldUrl) postJson('/manage/config/delete', { type: editingConfig.type, url: oldUrl }, save, '旧接口移除失败');
+        warnToast('接口已儲存');
+    }, '接口儲存失敗');
+    if (oldUrl) postJson('/manage/config/delete', { type: editingConfig.type, url: oldUrl }, save, '舊接口移除失敗');
     else save();
 }
 function useConfig(type, url) {
@@ -2338,40 +2338,40 @@ function useConfig(type, url) {
         configsData = data.items || [];
         configsLoadedKey = activeKey();
         renderConfigsManage();
-        warnToast('已切换接口，正在加载');
-    }, '接口启用失败');
+        warnToast('已切換接口，正在載入');
+    }, '接口啟用失敗');
 }
 function deleteConfig(type, url) {
     postJson('/manage/config/delete', { type, url }, data => {
         configsData = data.items || [];
         configsLoadedKey = activeKey();
         renderConfigsManage();
-        warnToast('接口已删除');
-    }, '接口删除失败');
+        warnToast('接口已刪除');
+    }, '接口刪除失敗');
 }
 function updateActionModeText() {
     const remote = mode === 'remote';
-    $('#searchTitle').text(remote ? '远端搜索' : '本机搜索');
-    $('#searchSubtitle').text(remote ? '让选中设备打开搜索结果页' : '让当前 App 打开搜索结果页');
-    $('#pushTitle').text(remote ? '远端推送' : '本机推送');
-    $('#pushSubtitle').text(remote ? '把播放地址推送到选中设备' : '把播放地址推送到当前 App');
+    $('#searchTitle').text(remote ? '遠端搜尋' : '本機搜尋');
+    $('#searchSubtitle').text(remote ? '讓選中裝置開啟搜尋結果頁' : '讓目前 App 開啟搜尋結果頁');
+    $('#pushTitle').text(remote ? '遠端推送' : '本機推送');
+    $('#pushSubtitle').text(remote ? '把播放位址推送到選中裝置' : '把播放位址推送到目前 App');
 }
 function remoteSearch() {
     const word = $('#remoteKeyword').val().trim();
-    if (!word) { warnToast('请输入搜索关键词'); return; }
+    if (!word) { warnToast('請輸入搜尋關鍵字'); return; }
     const payload = mode === 'remote' ? { target, do: 'search', word } : { do: 'search', word };
     if (mode === 'remote' && !target) { ensureActionTarget(); return; }
-    postAction('/manage/action', payload, () => warnToast('已发送搜索'), '搜索发送失败');
+    postAction('/manage/action', payload, () => warnToast('已發送搜尋'), '搜尋發送失敗');
 }
 function remotePush() {
     const url = $('#remotePushUrl').val().trim();
-    if (!url) { warnToast('请输入播放地址'); return; }
+    if (!url) { warnToast('請輸入播放位址'); return; }
     const payload = mode === 'remote' ? { target, do: 'push', url } : { do: 'push', url };
     if (mode === 'remote' && !target) { ensureActionTarget(); return; }
-    postAction('/manage/action', payload, () => warnToast('已发送推送'), '推送发送失败');
+    postAction('/manage/action', payload, () => warnToast('已發送推送'), '推送發送失敗');
 }
 function ensureActionTarget() {
-    warnToast('请先选择远端设备');
+    warnToast('請先選擇遠端裝置');
     devicePanelOpen = true;
     updateRemotePicker();
     loadDevices();

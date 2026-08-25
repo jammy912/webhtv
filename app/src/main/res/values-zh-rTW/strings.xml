@@ -1,13 +1,14 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">影視</string>
+    <string name="app_name">大大影視</string>
 
     <!-- Live -->
     <string name="live_pass">密碼</string>
     <string name="live_refresh">刷新</string>
     <string name="live_line">來源 <xliff:g name="name">%s</xliff:g></string>
     <string name="live_control_source">直播源</string>
+    <string name="live_no_epg">00:00 - 23:59 暫無節目資訊</string>
 
     <!-- Detail -->
     <string name="detail_title"><xliff:g name="name">%s</xliff:g>：<xliff:g name="name">%s</xliff:g></string>
@@ -620,6 +621,17 @@
     <string name="setting_custom_csp_jar">Jar</string>
     <string name="setting_custom_csp_link">連結</string>
     <string name="setting_custom_csp_up">上移</string>
+    <string name="setting_custom_csp_sort">排序</string>
+    <string name="setting_custom_csp_sort_done">完成</string>
+    <string name="setting_custom_csp_sort_drag">拖曳排序</string>
+    <string name="setting_custom_csp_sort_more">排序操作</string>
+    <string name="setting_custom_csp_sort_top">置頂</string>
+    <string name="setting_custom_csp_sort_bottom">置底</string>
+    <string name="setting_custom_csp_sort_forward_five">上移 5 位</string>
+    <string name="setting_custom_csp_sort_backward_five">下移 5 位</string>
+    <string name="setting_custom_csp_sort_move_to">移動到指定位置</string>
+    <string name="setting_custom_csp_sort_move_to_title">移動到指定位置</string>
+    <string name="setting_custom_csp_sort_move_to_hint">位置 1-%1$d</string>
     <string name="setting_proxy_url">socks5://127.0.0.1:9978</string>
     <string name="setting_proxy_hosts">匹配網域</string>
     <string name="setting_proxy_rules">Proxy 規則</string>
@@ -645,6 +657,11 @@
     <string name="setting_proxy_test_running">正在測試代理...</string>
     <string name="setting_proxy_test_success">代理測試通過：%1$s</string>
     <string name="setting_proxy_test_failed">代理測試失敗：%1$s</string>
+    <string name="setting_proxy_recognize">自動識別</string>
+    <string name="setting_proxy_recognize_hint">貼上完整配置、proxy 片段、規則陣列或單個規則物件</string>
+    <string name="setting_proxy_recognize_empty">請先貼上 Proxy 規則</string>
+    <string name="setting_proxy_recognize_failed">未識別到 Proxy 規則</string>
+    <string name="setting_proxy_recognize_done">已識別 %1$d 條 Proxy 規則</string>
     <string name="setting_one_key_sync">一鍵同步</string>
     <string name="setting_incognito">無痕模式</string>
     <string name="setting_drive_check">網盤檢測</string>
