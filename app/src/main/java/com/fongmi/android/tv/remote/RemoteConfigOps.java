@@ -36,8 +36,8 @@ public final class RemoteConfigOps {
         String aesIv = string(payload, "aesIv");
         if (TextUtils.isEmpty(url)) return RemoteCommandResult.failure("Missing config url");
         Config config = Config.find(url, type).name(name);
-        config.setAesKey(aesKey);
-        config.setAesIv(aesIv);
+        if (!TextUtils.isEmpty(aesKey)) config.setAesKey(aesKey);
+        if (!TextUtils.isEmpty(aesIv)) config.setAesIv(aesIv);
         config.save();
         return RemoteCommandResult.success("Config saved", data());
     }

@@ -503,6 +503,10 @@
                     <button class="md-btn md-btn-tonal md-btn-compact" onclick="chooseConfigLocalFile()" type="button">选择本地文件</button>
                 </div>
                 <textarea id="configUrl" class="code-area compact-code" spellcheck="false" placeholder="http(s)、file、assets 或本地路径"></textarea>
+                <label class="form-label" for="configAesKey">AES-256 密钥（可选，留空表示不加密）</label>
+                <input id="configAesKey" class="md-input" type="text" autocomplete="off" placeholder="接口返回内容需 AES-256-CBC 加密时填写" />
+                <label class="form-label" for="configAesIv">AES IV（可选）</label>
+                <input id="configAesIv" class="md-input" type="text" autocomplete="off" placeholder="16 字节初始向量" />
             </div>
             <div class="md-dialog-actions">
                 <button onclick="closeDialog('configDialog')" class="md-dialog-btn">取消</button>

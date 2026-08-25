@@ -2283,6 +2283,8 @@ function showConfigDialog(type = null, url = '', name = '') {
     $('#configTypeRow').toggle(!editing);
     $('#configName').val(name || '');
     $('#configUrl').val(url || '');
+    $('#configAesKey').val('').attr('placeholder', editing ? '留空表示不修改现有密钥' : '接口返回内容需 AES-256-CBC 加密时填写');
+    $('#configAesIv').val('').attr('placeholder', editing ? '留空表示不修改现有 IV' : '16 字节初始向量');
     $('#configDialogTitle').text(editing ? '编辑接口' : '新增接口');
     openDialog('configDialog');
 }
@@ -2316,9 +2318,11 @@ function saveConfigDialog() {
     const type = Number($('#configType').val() || 0);
     const name = $('#configName').val().trim();
     const url = $('#configUrl').val().trim();
+    const aesKey = $('#configAesKey').val().trim();
+    const aesIv = $('#configAesIv').val().trim();
     if (!url) { warnToast('请填写接口地址'); return; }
     const oldUrl = editingConfig && editingConfig.oldUrl && editingConfig.oldUrl !== url ? editingConfig.oldUrl : '';
-    const save = () => postJson('/manage/configs', { type, name, url }, data => {
+    const save = () => postJson('/manage/configs', { type, name, url, aesKey, aesIv }, data => {
         configsData = data.items || [];
         configsLoadedKey = activeKey();
         configFilter = type;
