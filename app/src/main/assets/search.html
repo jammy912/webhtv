@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <title>遠端搜尋播放</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0,viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="css/ui.css">
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/search.js" defer></script>
+</head>
+
+<body class="manage-page local-mode">
+    <div id="app" class="manage-app">
+        <header class="manage-top">
+            <div class="manage-heading">
+                <div class="manage-kicker">WebHTV</div>
+                <div class="manage-title">遠端搜尋播放</div>
+                <div class="manage-subtitle">在此搜尋，於裝置上直接播放</div>
+            </div>
+        </header>
+
+        <div class="manage-card">
+            <div class="manage-card-title">搜尋</div>
+            <div class="action-row">
+                <input id="searchWord" class="md-input" type="text" placeholder="輸入關鍵字，例如：韓國" autocomplete="off" />
+                <button class="md-btn md-btn-filled" onclick="startSearch()" type="button">搜尋</button>
+            </div>
+            <div class="manage-subtitle" id="searchStatus"></div>
+        </div>
+
+        <div class="manage-card">
+            <div class="manage-card-title">搜尋結果</div>
+            <div id="resultList" class="search-result-list"></div>
+        </div>
+    </div>
+
+    <div id="detailDialog" class="md-dialog-overlay">
+        <div class="md-dialog config-dialog">
+            <div class="md-dialog-title" id="detailTitle">選集</div>
+            <div class="md-dialog-body config-dialog-body">
+                <div id="detailFlags" class="search-flag-list"></div>
+            </div>
+            <div class="md-dialog-actions">
+                <button onclick="closeDetailDialog()" class="md-dialog-btn">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="warnToast"><div class="md-snackbar" id="warnToastContent"></div></div>
+    <div id="loadingToast"><div class="md-progress-wrap"><svg class="md-progress" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/></svg></div></div>
+</body>
+
+</html>

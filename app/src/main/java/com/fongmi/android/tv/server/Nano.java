@@ -15,6 +15,7 @@ import com.fongmi.android.tv.server.process.Parse;
 import com.fongmi.android.tv.server.process.PlaybackProgressApi;
 import com.fongmi.android.tv.server.process.PlaybackRecordApi;
 import com.fongmi.android.tv.server.process.Proxy;
+import com.fongmi.android.tv.server.process.RemoteSearch;
 import com.fongmi.android.tv.server.process.RemoteTrustSetup;
 import com.fongmi.android.tv.server.process.WebResourceGateway;
 import com.github.catvod.crawler.SpiderDebug;
@@ -53,6 +54,7 @@ public class Nano extends NanoHTTPD {
         process.add(new PlaybackProgressApi());
         process.add(new PlaybackRecordApi());
         process.add(new Proxy());
+        process.add(new RemoteSearch());
         process.add(new RemoteTrustSetup());
         process.add(new WebResourceGateway());
     }
@@ -111,6 +113,7 @@ public class Nano extends NanoHTTPD {
         try {
             if (path.isEmpty()) path = INDEX;
             if ("m".equals(path)) path = "manage.html";
+            if ("s".equals(path)) path = "search.html";
             InputStream is = Asset.open(path);
             return newFixedLengthResponse(Response.Status.OK, getMimeTypeForFile(path), is, -1);
         } catch (Exception e) {
