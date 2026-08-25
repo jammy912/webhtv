@@ -400,14 +400,14 @@ public class Manage implements Process {
     private boolean containsConfig(JsonArray items, Config config) {
         for (int i = 0; i < items.size(); i++) {
             JsonObject item = items.get(i).getAsJsonObject();
-            if (item.get("type").getAsInt() == config.getType() && item.get("url").getAsString().equals(config.getUrl())) return true;
+            if (item.get("type").getAsInt() == config.getType() && TextUtils.equals(item.get("url").getAsString(), config.getUrl())) return true;
         }
         return false;
     }
 
     private boolean isCurrentConfig(Config config) {
         Config current = currentConfig(config.getType());
-        return current.getUrl().equals(config.getUrl());
+        return TextUtils.equals(current.getUrl(), config.getUrl());
     }
 
     private Config currentConfig(int type) {
