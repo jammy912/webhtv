@@ -1082,7 +1082,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         clearKaraokeState();
         SpiderDebug.log("video-flow", "player clear audio state cost=%dms", System.currentTimeMillis() - step);
         step = System.currentTimeMillis();
-        if (shouldUseImmersiveAudio()) setAudioStageVisible(true);
+        setAudioStageVisible(shouldUseImmersiveAudio());
         SpiderDebug.log("video-flow", "player audio stage cost=%dms visible=%s", System.currentTimeMillis() - step, isMusicLike());
         step = System.currentTimeMillis();
         mViewModel.playerContent(getKey(), playFlag, episode.getUrl());

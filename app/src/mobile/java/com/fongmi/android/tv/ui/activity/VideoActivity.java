@@ -1197,7 +1197,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         applyPlaybackArtwork(episode);
         clearLyrics();
         clearKaraokeState();
-        if (shouldUseImmersiveAudio()) setAudioStageVisible(true);
+        setAudioStageVisible(shouldUseImmersiveAudio());
         mViewModel.playerContent(getKey(), playFlag, episode.getUrl());
         mBinding.control.title.setSelected(true);
         updateHistory(episode);
