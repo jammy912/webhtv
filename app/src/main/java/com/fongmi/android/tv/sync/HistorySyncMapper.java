@@ -4,7 +4,10 @@ import android.text.TextUtils;
 
 import androidx.media3.common.C;
 
+import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.utils.Util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -27,6 +30,16 @@ import java.util.Locale;
  * matching by episode *name* against the KVideo item's episodes[] (when supplied)
  * and only falls back to webhtv's own Util.getNumber() digit heuristic when no
  * name match is found.
+ *
+ * Playability of pulled-in items: KVideo's VideoHistoryItem.source is confirmed (per
+ * KVideo's own source-import-utils.ts / search-api.ts) to be the raw VideoSource.id
+ * from its subscribed source list - the same concept as webhtv's Site key - and
+ * videoId is the underlying site's raw vod_id, not a KVideo-internal PK. When webhtv
+ * and KVideo are configured against the same source subscription (confirmed the case
+ * here), source+videoId can be recomposed into a real webhtv History.key so natively-
+ * KVideo-watched items become playable in webhtv too, not just history entries webhtv
+ * itself pushed up. Falls back to treating videoId as an already-complete webhtv key
+ * (legacy behavior) when source is absent or doesn't match a configured Site.
  */
 public class HistorySyncMapper {
 
@@ -61,7 +74,7 @@ public class HistorySyncMapper {
 
     public static History toHistoryUpdate(JsonObject kvideoItem, History existing) {
         History history = existing != null ? existing.copy() : new History();
-        if (existing == null) history.setKey(requireVideoId(kvideoItem));
+        if (existing == null) history.setKey(resolveKey(kvideoItem));
         history.setVodName(getString(kvideoItem, "title", history.getVodName()));
         String pic = getString(kvideoItem, "poster", null);
         if (!TextUtils.isEmpty(pic)) history.setVodPic(pic);
@@ -141,10 +154,19 @@ public class HistorySyncMapper {
         return episodeIndex < 0 ? "" : String.valueOf(episodeIndex + 1);
     }
 
-    private static String requireVideoId(JsonObject item) {
+    /** Recomposes a real webhtv History.key (siteKey@@@vodId@@@cid) from KVideo's own
+     *  source+videoId when source names a Site webhtv actually has configured, so the
+     *  item is playable, not just a display-only entry. Falls back to using videoId
+     *  as-is (legacy: assumes it's already a full webhtv key, true for items webhtv
+     *  itself pushed via toKVideoItem()'s videoId=history.getKey()). */
+    private static String resolveKey(JsonObject item) {
         String videoId = getString(item, "videoId", null);
         if (TextUtils.isEmpty(videoId)) throw new IllegalArgumentException("KVideo item missing videoId");
-        return videoId;
+        String source = getString(item, "source", null);
+        if (TextUtils.isEmpty(source)) return videoId;
+        Site site = VodConfig.get().getSite(source);
+        if (TextUtils.isEmpty(site.getKey())) return videoId;
+        return source + AppDatabase.SYMBOL + videoId + AppDatabase.SYMBOL + VodConfig.getCid();
     }
 
     private static String getString(JsonObject object, String field, String fallback) {

@@ -136,6 +136,22 @@ public final class KVideoSyncEngine {
         return null;
     }
 
+    /**
+     * Switches the active account and replaces local history with that account's
+     * remote data. webhtv lets a single device swap between multiple KVideo accounts -
+     * KVideo itself has no such concept (one browser session, one account) - so without
+     * this, a prior account's synced-in rows would just sit there forever, mixed in
+     * with whatever the newly selected account pulls in. Wipes local history for the
+     * current VOD config (cid) before pulling, rather than trying to reconcile/tag rows
+     * by account, since History has no per-account column and adding one is a bigger
+     * schema change than this feature currently warrants.
+     */
+    public int switchAccount(String username) throws Exception {
+        KVideoAccountStore.setActiveUsername(username);
+        History.delete(com.fongmi.android.tv.api.config.VodConfig.getCid());
+        return pull();
+    }
+
     /** Pulls KVideo's history/favorites and overwrites matching local History rows by
      *  showIdentifier (title match), same semantics as KVideo's own importHistory().
      *  Returns the number of history items applied, so callers can surface a concrete

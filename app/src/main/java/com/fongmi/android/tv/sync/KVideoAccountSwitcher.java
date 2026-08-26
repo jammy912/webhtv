@@ -55,11 +55,10 @@ public final class KVideoAccountSwitcher {
     }
 
     private static void select(AccountProfile profile) {
-        KVideoAccountStore.setActiveUsername(profile.getUsername());
         Notify.show(App.get().getString(R.string.kvideo_account_switched, profile.getLabel()));
         Task.execute(() -> {
             try {
-                int count = KVideoSyncEngine.get().pull();
+                int count = KVideoSyncEngine.get().switchAccount(profile.getUsername());
                 App.post(() -> Notify.show(count > 0
                         ? App.get().getString(R.string.kvideo_account_pull_done, count)
                         : App.get().getString(R.string.kvideo_account_pull_empty)));
