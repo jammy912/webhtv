@@ -23,8 +23,11 @@ import javax.crypto.SecretKey;
 
 /**
  * Ties SyncCrypto + UpstashSyncClient + HistorySyncMapper + KVideoAccountStore together.
- * Every call re-fetches and decrypts the account list fresh (nothing is cached to disk,
- * per an explicit no-persistence decision) and discards credentials once the call returns.
+ * The account list's raw ciphertext is persisted on disk (AccountListStore) - a
+ * deliberate reversal of the original no-persistence decision, see that class's note.
+ * fetchAccountList() reads the cached ciphertext when present, decrypting fresh each
+ * call rather than caching decrypted profiles in memory; refreshAccountList() re-fetches
+ * from the network and updates the cache.
  *
  * Sync policy mirrors KVideo's own AutoSync.tsx on purpose (see design discussion):
  * whole-object overwrite, no timestamp-based merge protection. KVideo's own push already
@@ -39,12 +42,33 @@ public final class KVideoSyncEngine {
     private static final KVideoSyncEngine INSTANCE = new KVideoSyncEngine();
 
     private final AtomicBoolean pulledThisLaunch = new AtomicBoolean(false);
+    private final AtomicBoolean accountListRefreshedThisLaunch = new AtomicBoolean(false);
 
     private KVideoSyncEngine() {
     }
 
     public static KVideoSyncEngine get() {
         return INSTANCE;
+    }
+
+    /**
+     * Fire-and-forget: refreshes the on-disk account list cache once per process
+     * lifetime, so accounts added/removed in the sheet since last launch show up
+     * without the user needing to force a refresh. Safe to call unconditionally (unlike
+     * pullOncePerLaunch, this doesn't require an active account - the switcher itself
+     * needs a current list before one can even be chosen).
+     */
+    public void refreshAccountListOncePerLaunch() {
+        if (!KVideoAccountStore.hasListSource()) return;
+        if (!accountListRefreshedThisLaunch.compareAndSet(false, true)) return;
+        Task.execute(() -> {
+            try {
+                refreshAccountList();
+            } catch (Exception e) {
+                accountListRefreshedThisLaunch.set(false); // allow a retry on next Activity startup
+                com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "startup account list refresh failed error=%s", e.getMessage());
+            }
+        });
     }
 
     /**
@@ -67,17 +91,34 @@ public final class KVideoSyncEngine {
     }
 
     /**
-     * Fetches, decrypts, and returns the account list. Never persisted by the caller.
+     * Returns the account list, decrypting the cached ciphertext when present rather
+     * than hitting the network - falls back to refreshAccountList() when nothing is
+     * cached yet (e.g. first run on this device).
+     */
+    public List<AccountProfile> fetchAccountList() throws Exception {
+        if (!AccountListStore.hasCiphertext()) return refreshAccountList();
+        return decodeAccountList(AccountListStore.getCiphertext());
+    }
+
+    /**
+     * Fetches, decrypts, returns, and caches the account list from the network.
      * Reuses the VOD source's URL/AES key/IV (Config.vod()) and its combined
      * {sites:[...], accounts:[...]} response - a deliberate single-key simplification,
      * not a separate feed - so this issues its own HTTP call to that same URL rather
      * than piggybacking on VodConfig's own load (which discards the raw JSON).
      */
-    public List<AccountProfile> fetchAccountList() throws Exception {
+    public List<AccountProfile> refreshAccountList() throws Exception {
         if (!KVideoAccountStore.hasListSource()) throw new IllegalStateException("Account list source not configured");
         Config config = Config.vod();
         String encrypted = OkHttp.string(config.getUrl());
         if (TextUtils.isEmpty(encrypted)) throw new IllegalStateException("Empty account list response");
+        List<AccountProfile> profiles = decodeAccountList(encrypted);
+        AccountListStore.saveCiphertext(encrypted);
+        return profiles;
+    }
+
+    private List<AccountProfile> decodeAccountList(String encrypted) throws Exception {
+        Config config = Config.vod();
         String json = AccountListCrypto.decrypt(encrypted, config.getAesKey(), config.getAesIv());
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         JsonElement accountsEl = root.get("accounts");

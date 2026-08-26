@@ -121,6 +121,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         setTitle();
         setLogo();
         updateToolbarMenu();
+        KVideoSyncEngine.get().refreshAccountListOncePerLaunch();
         KVideoSyncEngine.get().pullOncePerLaunch();
     }
 

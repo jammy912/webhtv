@@ -152,6 +152,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         setViewModel();
         setAdapter();
         runAfterFirstFrame(this::initAfterFirstFrame);
+        KVideoSyncEngine.get().refreshAccountListOncePerLaunch();
         KVideoSyncEngine.get().pullOncePerLaunch();
         SpiderDebug.log("startup", "home initView end cost=%sms", System.currentTimeMillis() - App.time());
     }
