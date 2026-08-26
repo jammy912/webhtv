@@ -55,11 +55,18 @@ public class HistorySyncMapper {
      *  name, not just index. Pass the current Flag's episode names, or empty if unknown. */
     public static JsonObject toKVideoItem(History history, List<String> episodeNames) {
         JsonObject item = new JsonObject();
-        item.addProperty("videoId", history.getKey());
+        // videoId/source must match KVideo's own semantics (raw site vod_id, raw
+        // VideoSource.id) - not webhtv's own key/display-name - so items webhtv pushes
+        // stay playable from KVideo's side too, and so resolveKey() can recompose the
+        // same webhtv key when this item round-trips back through pull(). Previously
+        // this pushed history.getKey() (the full webhtv key) as videoId and
+        // history.getSiteName() (a display name) as source, which KVideo could never
+        // resolve back to a real source.
+        item.addProperty("videoId", history.getVodId());
         item.addProperty("title", history.getVodName());
         item.addProperty("url", history.getEpisodeUrl());
         item.addProperty("episodeIndex", resolveEpisodeIndex(history.getVodRemarks(), episodeNames));
-        item.addProperty("source", history.getSiteName());
+        item.addProperty("source", history.getSiteKey());
         item.addProperty("timestamp", history.getUpdateTime() > 0 ? history.getUpdateTime() : history.getCreateTime());
         item.addProperty("playbackPosition", toSeconds(history.getPosition()));
         item.addProperty("duration", toSeconds(history.getDuration()));
