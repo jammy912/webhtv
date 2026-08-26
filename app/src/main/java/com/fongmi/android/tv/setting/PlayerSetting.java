@@ -260,7 +260,7 @@ public class PlayerSetting {
     }
 
     public static int getBackground() {
-        int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.ON);
+        int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.OFF);
         int normalized = BackgroundPlaybackPolicy.normalize(stored);
         if (stored != normalized) Prefers.put("background", normalized);
         return normalized;
