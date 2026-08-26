@@ -49,7 +49,6 @@ import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.ApkPushDialog;
 import com.fongmi.android.tv.ui.dialog.FilterDialog;
-import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.LinkDialog;
 import com.fongmi.android.tv.ui.dialog.OneKeySyncDialog;
 import com.fongmi.android.tv.ui.dialog.PushPlayDialog;
@@ -57,6 +56,8 @@ import com.fongmi.android.tv.ui.dialog.PushPlayUrlDialog;
 import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
 import com.fongmi.android.tv.ui.dialog.TypeDialog;
+import com.fongmi.android.tv.sync.KVideoAccountSwitcher;
+import com.fongmi.android.tv.sync.KVideoSyncEngine;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -120,6 +121,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         setTitle();
         setLogo();
         updateToolbarMenu();
+        KVideoSyncEngine.get().pullOncePerLaunch();
     }
 
     @Override
@@ -248,7 +250,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void onLogo(View view) {
-        HistoryDialog.create().vod().readOnly().show(this);
+        KVideoAccountSwitcher.open(requireActivity());
     }
 
     private void onSite(View view) {

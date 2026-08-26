@@ -654,6 +654,12 @@
     <string name="setting_proxy_recognize_empty">Paste proxy rules first</string>
     <string name="setting_proxy_recognize_failed">No proxy rule detected</string>
     <string name="setting_proxy_recognize_done">Detected %1$d proxy rules</string>
+    <string name="kvideo_account_source_missing">Account list source not configured yet - set the feed URL and key first</string>
+    <string name="kvideo_account_fetch_failed">Failed to fetch account list - check network and source settings</string>
+    <string name="kvideo_account_list_empty">Account list is currently empty</string>
+    <string name="kvideo_account_switch_title">Switch account</string>
+    <string name="kvideo_account_switched">Switched to "%1$s", syncing watch history</string>
+    <string name="kvideo_account_pull_failed">Failed to sync watch history, try again later</string>
     <string name="setting_proxy_test">Test proxy</string>
     <string name="setting_proxy_select_site">Select source</string>
     <string name="setting_proxy_no_site">No source available</string>

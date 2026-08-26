@@ -6,6 +6,9 @@ import androidx.media3.common.Player;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.sync.KVideoSyncCollector;
+
+import java.util.Collections;
 
 public final class PlaybackEventCollector {
 
@@ -56,6 +59,7 @@ public final class PlaybackEventCollector {
             sender.scheduleProgress(record.withEvent(PROGRESS));
         } else if (state == Player.STATE_ENDED) {
             if (started) sender.sendFinalThen(record, ENDED);
+            KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
             resetStarted();
         }
     }
@@ -70,6 +74,7 @@ public final class PlaybackEventCollector {
             sender.scheduleProgress(record.withEvent(PROGRESS));
         } else if (started && lastPlaying && player != null && player.getPlaybackState() == Player.STATE_READY) {
             sender.sendFinalThen(record, PAUSE);
+            KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
         }
         lastPlaying = isPlaying;
     }
@@ -78,6 +83,7 @@ public final class PlaybackEventCollector {
         History history = current(player);
         PlaybackRecord record = snapshot(history, player, "");
         if (record != null && started) sender.sendFinalThen(record, STOP);
+        KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
         resetStarted();
     }
 

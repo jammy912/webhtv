@@ -653,6 +653,12 @@
     <string name="setting_proxy_recognize_empty">请先粘贴 Proxy 规则</string>
     <string name="setting_proxy_recognize_failed">未识别到 Proxy 规则</string>
     <string name="setting_proxy_recognize_done">已识别 %1$d 条 Proxy 规则</string>
+    <string name="kvideo_account_source_missing">尚未设置账户列表来源，请先在设置里填入来源网址与密钥</string>
+    <string name="kvideo_account_fetch_failed">账户列表读取失败，请确认网络连接与来源设置</string>
+    <string name="kvideo_account_list_empty">账户列表目前是空的</string>
+    <string name="kvideo_account_switch_title">切换账户</string>
+    <string name="kvideo_account_switched">已切换到「%1$s」，正在同步观看记录</string>
+    <string name="kvideo_account_pull_failed">同步观看记录失败，请稍后再试</string>
     <string name="setting_proxy_test">测试代理</string>
     <string name="setting_proxy_select_site">选择站点</string>
     <string name="setting_proxy_no_site">暂无可选站点</string>

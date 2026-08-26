@@ -51,6 +51,8 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.sync.KVideoAccountSwitcher;
+import com.fongmi.android.tv.sync.KVideoSyncEngine;
 import com.fongmi.android.tv.ui.adapter.BaseDiffCallback;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -150,6 +152,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         setViewModel();
         setAdapter();
         runAfterFirstFrame(this::initAfterFirstFrame);
+        KVideoSyncEngine.get().pullOncePerLaunch();
         SpiderDebug.log("startup", "home initView end cost=%sms", System.currentTimeMillis() - App.time());
     }
 
@@ -507,6 +510,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void setLogo() {
         ImgUtil.logo(mBinding.logo);
+        mBinding.logo.setOnClickListener(view -> KVideoAccountSwitcher.open(this));
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

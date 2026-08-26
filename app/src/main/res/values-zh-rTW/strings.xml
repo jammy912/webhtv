@@ -662,6 +662,12 @@
     <string name="setting_proxy_recognize_empty">請先貼上 Proxy 規則</string>
     <string name="setting_proxy_recognize_failed">未識別到 Proxy 規則</string>
     <string name="setting_proxy_recognize_done">已識別 %1$d 條 Proxy 規則</string>
+    <string name="kvideo_account_source_missing">尚未設定帳戶清單來源，請先在設定裡填入來源網址與金鑰</string>
+    <string name="kvideo_account_fetch_failed">帳戶清單讀取失敗，請確認網路連線與來源設定</string>
+    <string name="kvideo_account_list_empty">帳戶清單目前是空的</string>
+    <string name="kvideo_account_switch_title">切換帳戶</string>
+    <string name="kvideo_account_switched">已切換到「%1$s」，正在同步觀看紀錄</string>
+    <string name="kvideo_account_pull_failed">同步觀看紀錄失敗，請稍後再試</string>
     <string name="setting_one_key_sync">一鍵同步</string>
     <string name="setting_incognito">無痕模式</string>
     <string name="setting_drive_check">網盤檢測</string>
