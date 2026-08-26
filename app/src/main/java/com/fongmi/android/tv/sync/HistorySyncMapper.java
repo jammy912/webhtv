@@ -9,6 +9,7 @@ import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.utils.Util;
+import com.github.catvod.utils.Trans;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -67,7 +68,11 @@ public class HistorySyncMapper {
         item.addProperty("url", history.getEpisodeUrl());
         item.addProperty("episodeIndex", resolveEpisodeIndex(history.getVodRemarks(), episodeNames));
         item.addProperty("source", history.getSiteKey());
-        item.addProperty("timestamp", history.getUpdateTime() > 0 ? history.getUpdateTime() : history.getCreateTime());
+        // KVideo's timestamp is seconds-based (see toHistoryUpdate()'s timestampSec*1000L
+        // on the pull side) - history.getUpdateTime()/getCreateTime() are milliseconds,
+        // so this must divide by 1000 or KVideo computes a wildly wrong "days ago".
+        long timeMs = history.getUpdateTime() > 0 ? history.getUpdateTime() : history.getCreateTime();
+        item.addProperty("timestamp", timeMs / 1000L);
         item.addProperty("playbackPosition", toSeconds(history.getPosition()));
         item.addProperty("duration", toSeconds(history.getDuration()));
         if (!TextUtils.isEmpty(history.getVodPic())) item.addProperty("poster", history.getVodPic());
@@ -99,8 +104,19 @@ public class HistorySyncMapper {
         return history;
     }
 
+    /** Normalizes to simplified Chinese before matching, since webhtv auto-converts
+     *  simplified site content to traditional on ingest (Vod.trans() -> Trans.s2t()),
+     *  while KVideo stores whatever the source API originally returned (often
+     *  simplified). Two apps' titles for the same show can render identically but
+     *  differ at the character level (e.g. "云" vs "雲"), which silently broke exact
+     *  string matching and caused push() to append a duplicate row instead of
+     *  overwriting the existing one - confirmed against a real mismatch. */
     public static String identifierFor(String title) {
-        return "title:" + (title == null ? "" : title.toLowerCase(Locale.ROOT).trim());
+        // Force conversion (pass=false) regardless of the user's Trans.setTraditional()
+        // display preference - this is an internal matching key, not user-facing text,
+        // so it must not depend on a display setting.
+        String normalized = title == null ? "" : Trans.t2s(false, title.toLowerCase(Locale.ROOT).trim());
+        return "title:" + normalized;
     }
 
     /** Builds the {history:[...],favorites:[...]} plaintext body KVideo expects. */
