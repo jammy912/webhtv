@@ -69,6 +69,13 @@ public class HistorySyncMapper {
         history.setVodRemarks(resolveEpisodeLabel(kvideoItem, existing));
         history.setPosition(toMillis(getLong(kvideoItem, "playbackPosition", -1)));
         history.setDuration(toMillis(getLong(kvideoItem, "duration", -1)));
+        // History.get() filters out rows older than Constant.HISTORY_TIME; a freshly
+        // built History defaults createTime to 0 (1970), which is always excluded -
+        // that's why synced-in rows previously never showed up under "recent". KVideo's
+        // timestamp is seconds-based (see toKVideoItem toSeconds()), hence the *1000.
+        long timestampSec = getLong(kvideoItem, "timestamp", -1);
+        long remoteTimeMs = timestampSec > 0 ? timestampSec * 1000L : System.currentTimeMillis();
+        if (existing == null || remoteTimeMs > existing.getCreateTime()) history.setCreateTime(remoteTimeMs);
         return history;
     }
 
