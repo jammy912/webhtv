@@ -667,7 +667,9 @@
     <string name="kvideo_account_list_empty">帳戶清單目前是空的</string>
     <string name="kvideo_account_switch_title">切換帳戶</string>
     <string name="kvideo_account_switched">已切換到「%1$s」，正在同步觀看紀錄</string>
-    <string name="kvideo_account_pull_failed">同步觀看紀錄失敗，請稍後再試</string>
+    <string name="kvideo_account_pull_done">已同步 %1$d 筆觀看紀錄</string>
+    <string name="kvideo_account_pull_empty">KVideo 端目前沒有可同步的觀看紀錄</string>
+    <string name="kvideo_account_pull_failed_detail">同步觀看紀錄失敗：%1$s</string>
     <string name="setting_one_key_sync">一鍵同步</string>
     <string name="setting_incognito">無痕模式</string>
     <string name="setting_drive_check">網盤檢測</string>

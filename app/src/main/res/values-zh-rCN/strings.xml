@@ -658,7 +658,9 @@
     <string name="kvideo_account_list_empty">账户列表目前是空的</string>
     <string name="kvideo_account_switch_title">切换账户</string>
     <string name="kvideo_account_switched">已切换到「%1$s」，正在同步观看记录</string>
-    <string name="kvideo_account_pull_failed">同步观看记录失败，请稍后再试</string>
+    <string name="kvideo_account_pull_done">已同步 %1$d 条观看记录</string>
+    <string name="kvideo_account_pull_empty">KVideo 端目前没有可同步的观看记录</string>
+    <string name="kvideo_account_pull_failed_detail">同步观看记录失败：%1$s</string>
     <string name="setting_proxy_test">测试代理</string>
     <string name="setting_proxy_select_site">选择站点</string>
     <string name="setting_proxy_no_site">暂无可选站点</string>

@@ -96,14 +96,17 @@ public final class KVideoSyncEngine {
     }
 
     /** Pulls KVideo's history/favorites and overwrites matching local History rows by
-     *  showIdentifier (title match), same semantics as KVideo's own importHistory(). */
-    public void pull() throws Exception {
+     *  showIdentifier (title match), same semantics as KVideo's own importHistory().
+     *  Returns the number of history items applied, so callers can surface a concrete
+     *  result (0 usually means either an empty remote payload or a decrypt mismatch -
+     *  see the class-level troubleshooting note). */
+    public int pull() throws Exception {
         AccountProfile account = requireActiveAccount();
         JsonObject payload = fetchDecryptedPayload(account);
-        if (payload == null) return;
-        for (JsonObject item : HistorySyncMapper.readHistoryItems(payload)) {
-            applyRemoteItem(item);
-        }
+        if (payload == null) return 0;
+        List<JsonObject> items = HistorySyncMapper.readHistoryItems(payload);
+        for (JsonObject item : items) applyRemoteItem(item);
+        return items.size();
     }
 
     /** Pushes a single History row (whole-object overwrite of the "encrypted" field, per
@@ -175,14 +178,15 @@ public final class KVideoSyncEngine {
      *  on purpose - see the class-level note on sync policy. */
     private void applyRemoteItem(JsonObject item) {
         String identifier = item.has("showIdentifier") ? item.get("showIdentifier").getAsString() : null;
-        History existing = findLocalByIdentifier(identifier);
+        int cid = com.fongmi.android.tv.api.config.VodConfig.getCid();
+        History existing = findLocalByIdentifier(identifier, cid);
         History updated = HistorySyncMapper.toHistoryUpdate(item, existing);
-        updated.save();
+        updated.save(cid);
     }
 
-    private History findLocalByIdentifier(String identifier) {
+    private History findLocalByIdentifier(String identifier, int cid) {
         if (TextUtils.isEmpty(identifier)) return null;
-        for (History history : History.get()) {
+        for (History history : History.get(cid)) {
             if (TextUtils.equals(HistorySyncMapper.identifierFor(history.getVodName()), identifier)) return history;
         }
         return null;

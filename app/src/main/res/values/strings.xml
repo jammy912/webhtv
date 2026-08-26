@@ -659,7 +659,9 @@
     <string name="kvideo_account_list_empty">Account list is currently empty</string>
     <string name="kvideo_account_switch_title">Switch account</string>
     <string name="kvideo_account_switched">Switched to "%1$s", syncing watch history</string>
-    <string name="kvideo_account_pull_failed">Failed to sync watch history, try again later</string>
+    <string name="kvideo_account_pull_done">Synced %1$d watch history item(s)</string>
+    <string name="kvideo_account_pull_empty">No watch history available from KVideo yet</string>
+    <string name="kvideo_account_pull_failed_detail">Failed to sync watch history: %1$s</string>
     <string name="setting_proxy_test">Test proxy</string>
     <string name="setting_proxy_select_site">Select source</string>
     <string name="setting_proxy_no_site">No source available</string>

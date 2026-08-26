@@ -59,9 +59,13 @@ public final class KVideoAccountSwitcher {
         Notify.show(App.get().getString(R.string.kvideo_account_switched, profile.getLabel()));
         Task.execute(() -> {
             try {
-                KVideoSyncEngine.get().pull();
+                int count = KVideoSyncEngine.get().pull();
+                App.post(() -> Notify.show(count > 0
+                        ? App.get().getString(R.string.kvideo_account_pull_done, count)
+                        : App.get().getString(R.string.kvideo_account_pull_empty)));
             } catch (Exception e) {
-                App.post(() -> Notify.show(R.string.kvideo_account_pull_failed));
+                String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                App.post(() -> Notify.show(App.get().getString(R.string.kvideo_account_pull_failed_detail, message)));
             }
         });
     }
