@@ -747,6 +747,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         super.onResume();
         mClock.start();
         if (mWeb != null) mWeb.onResume();
+        KVideoSyncEngine.get().pullIfStale(java.util.concurrent.TimeUnit.MINUTES.toMillis(1));
     }
 
     @Override

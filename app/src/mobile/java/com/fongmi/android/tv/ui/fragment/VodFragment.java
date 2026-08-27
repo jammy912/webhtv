@@ -520,6 +520,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     public void onResume() {
         super.onResume();
         if (mWeb != null) mWeb.onResume();
+        KVideoSyncEngine.get().pullIfStale(java.util.concurrent.TimeUnit.MINUTES.toMillis(1));
     }
 
     @Override

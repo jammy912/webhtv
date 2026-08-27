@@ -43,6 +43,8 @@ public final class KVideoSyncEngine {
 
     private final AtomicBoolean pulledThisLaunch = new AtomicBoolean(false);
     private final AtomicBoolean accountListRefreshedThisLaunch = new AtomicBoolean(false);
+    private final AtomicBoolean pollingStarted = new AtomicBoolean(false);
+    private final java.util.concurrent.atomic.AtomicLong lastPullAtMs = new java.util.concurrent.atomic.AtomicLong(0);
 
     private KVideoSyncEngine() {
     }
@@ -79,13 +81,60 @@ public final class KVideoSyncEngine {
      */
     public void pullOncePerLaunch() {
         if (!KVideoAccountStore.hasActiveAccount()) return;
+        startPollingIfNeeded();
         if (!pulledThisLaunch.compareAndSet(false, true)) return;
         Task.execute(() -> {
             try {
                 pull();
+                lastPullAtMs.set(System.currentTimeMillis());
             } catch (Exception e) {
                 pulledThisLaunch.set(false); // allow a retry on next Activity startup
                 com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "startup pull failed error=%s", e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Starts a background 1-minute poll, once per process lifetime, so history stays
+     * current even while the app sits idle on the home screen with no onResume() firing
+     * to trigger pullIfStale(). Runs for the life of the process; there's no explicit
+     * stop since the scheduler thread is a daemon-backed pool shared with the rest of
+     * the app (Task.scheduler()), not something that needs its own lifecycle.
+     */
+    private void startPollingIfNeeded() {
+        if (!pollingStarted.compareAndSet(false, true)) return;
+        long intervalMs = java.util.concurrent.TimeUnit.MINUTES.toMillis(1);
+        Task.scheduler().scheduleWithFixedDelay(() -> {
+            if (!KVideoAccountStore.hasActiveAccount()) return;
+            try {
+                pull();
+                lastPullAtMs.set(System.currentTimeMillis());
+            } catch (Exception e) {
+                com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "background poll failed error=%s", e.getMessage());
+            }
+        }, intervalMs, intervalMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Fire-and-forget: pulls when the app returns to the foreground (e.g. onResume()),
+     * but only if at least minIntervalMs has passed since the last successful pull -
+     * covers the gap pullOncePerLaunch leaves (the process can sit backgrounded for
+     * a day without being killed, during which KVideo-side watches never show up
+     * until the process is actually restarted) without hammering Upstash on every
+     * quick app-switch.
+     */
+    public void pullIfStale(long minIntervalMs) {
+        if (!KVideoAccountStore.hasActiveAccount()) return;
+        long now = System.currentTimeMillis();
+        long last = lastPullAtMs.get();
+        if (now - last < minIntervalMs) return;
+        if (!lastPullAtMs.compareAndSet(last, now)) return; // another caller just claimed this pull
+        Task.execute(() -> {
+            try {
+                pull();
+            } catch (Exception e) {
+                lastPullAtMs.set(last); // allow a retry on the next resume
+                com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "foreground pull failed error=%s", e.getMessage());
             }
         });
     }
@@ -163,6 +212,11 @@ public final class KVideoSyncEngine {
         if (payload == null) return 0;
         List<JsonObject> items = HistorySyncMapper.readHistoryItems(payload);
         for (JsonObject item : items) applyRemoteItem(item);
+        // Without this, a background pull (pullIfStale) that writes new History rows
+        // would leave an already-rendered "recent" list stale until the user manually
+        // leaves and re-enters that screen - the write itself doesn't trigger any UI
+        // refresh on its own.
+        if (!items.isEmpty()) com.fongmi.android.tv.event.RefreshEvent.history();
         return items.size();
     }
 

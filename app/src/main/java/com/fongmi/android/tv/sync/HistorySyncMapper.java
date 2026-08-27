@@ -192,6 +192,14 @@ public class HistorySyncMapper {
         if (TextUtils.isEmpty(videoId)) throw new IllegalArgumentException("KVideo item missing videoId");
         String source = getString(item, "source", null);
         if (TextUtils.isEmpty(source)) return videoId;
+        // pullOncePerLaunch() fires during Activity.initView() - VodConfig's site list
+        // can still be mid-load then, so getSite() would find nothing and this would
+        // silently fall through to the broken legacy path (confirmed: caused a
+        // regression to "no playback data" until the user forced a manual re-pull via
+        // the logo, by which point VodConfig had finished loading). ensureLoaded() is
+        // synchronous and a no-op once already loaded, so this only blocks on the very
+        // first call during startup.
+        VodConfig.get().ensureLoaded();
         Site site = VodConfig.get().getSite(source);
         if (TextUtils.isEmpty(site.getKey())) return videoId;
         return source + AppDatabase.SYMBOL + videoId + AppDatabase.SYMBOL + VodConfig.getCid();
