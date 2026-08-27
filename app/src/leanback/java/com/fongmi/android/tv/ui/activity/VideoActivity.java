@@ -109,6 +109,7 @@ import com.fongmi.android.tv.setting.PlayerButtonSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
+import com.fongmi.android.tv.sync.KVideoSyncCollector;
 import com.fongmi.android.tv.ui.adapter.ArrayAdapter;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
@@ -1676,8 +1677,12 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     private void onKeep() {
         Keep keep = Keep.find(getHistoryKey());
         Notify.show(keep != null ? R.string.keep_del : R.string.keep_add);
-        if (keep != null) keep.delete();
-        else createKeep();
+        if (keep != null) {
+            keep.delete();
+            KVideoSyncCollector.get().onFavoriteRemoved(keep);
+        } else {
+            KVideoSyncCollector.get().onFavoriteAdded(createKeep());
+        }
         checkKeepImg();
     }
 
@@ -3657,7 +3662,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.audioKeepAction.setCompoundDrawablesWithIntrinsicBounds(0, kept ? R.drawable.ic_detail_keep_on : R.drawable.ic_detail_keep_off, 0, 0);
     }
 
-    private void createKeep() {
+    private Keep createKeep() {
         Keep keep = new Keep();
         keep.setKey(getHistoryKey());
         keep.setCid(VodConfig.getCid());
@@ -3666,6 +3671,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         keep.setSiteName(getSite().getName());
         keep.setCreateTime(System.currentTimeMillis());
         keep.save();
+        return keep;
     }
 
     private void updateKeep() {

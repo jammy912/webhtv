@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.Task;
 
@@ -74,6 +75,19 @@ public final class KVideoSyncCollector {
         History snapshot = history.copy();
         List<String> namesSnapshot = episodeNames == null ? Collections.emptyList() : episodeNames;
         Task.execute(() -> KVideoSyncEngine.get().pushSingle(snapshot, namesSnapshot));
+    }
+
+    /** Favorites toggling is low-frequency (a deliberate user tap), unlike playback
+     *  progress - push immediately rather than debouncing, so the round-trip to
+     *  Upstash starts right away instead of waiting out DEBOUNCE_MS for no reason. */
+    public void onFavoriteAdded(@Nullable Keep keep) {
+        if (!isEnabled() || keep == null) return;
+        Task.execute(() -> KVideoSyncEngine.get().pushFavoriteAdd(keep));
+    }
+
+    public void onFavoriteRemoved(@Nullable Keep keep) {
+        if (!isEnabled() || keep == null) return;
+        Task.execute(() -> KVideoSyncEngine.get().pushFavoriteRemove(keep));
     }
 
     private void schedulePush(History history, List<String> episodeNames) {

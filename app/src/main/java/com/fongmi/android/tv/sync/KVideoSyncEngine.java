@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Keep;
 import com.github.catvod.net.OkHttp;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -198,10 +199,11 @@ public final class KVideoSyncEngine {
     public int switchAccount(String username) throws Exception {
         KVideoAccountStore.setActiveUsername(username);
         History.delete(com.fongmi.android.tv.api.config.VodConfig.getCid());
+        Keep.delete(com.fongmi.android.tv.api.config.VodConfig.getCid());
         // Force a real pull even if this account's updatedAt hasn't changed since last
-        // seen (e.g. re-selecting the same account as a manual refresh) - local history
-        // was just wiped above, so skipping here would leave it empty instead of
-        // repopulated.
+        // seen (e.g. re-selecting the same account as a manual refresh) - local history/
+        // favorites were just wiped above, so skipping here would leave them empty
+        // instead of repopulated.
         KVideoAccountStore.setLastUpdatedAt(username, 0);
         return pull();
     }
@@ -232,12 +234,17 @@ public final class KVideoSyncEngine {
         List<JsonObject> items = HistorySyncMapper.readHistoryItems(payload);
         for (JsonObject item : items) applyRemoteItem(item);
         pruneLocalRowsNotInRemote(items);
-        if (remoteUpdatedAt > 0) KVideoAccountStore.setLastUpdatedAt(account.getUsername(), remoteUpdatedAt);
-        // Without this, a background pull (pullIfStale) that writes new History rows
-        // would leave an already-rendered "recent" list stale until the user manually
-        // leaves and re-enters that screen - the write itself doesn't trigger any UI
-        // refresh on its own.
         if (!items.isEmpty()) com.fongmi.android.tv.event.RefreshEvent.history();
+
+        List<JsonObject> favoriteItems = FavoriteSyncMapper.readFavoriteItems(payload);
+        boolean favoritesChanged = applyRemoteFavorites(favoriteItems);
+        // Without this, a background pull (pullIfStale) that writes new History/Keep
+        // rows would leave an already-rendered "recent"/"favorites" list stale until the
+        // user manually leaves and re-enters that screen - the write itself doesn't
+        // trigger any UI refresh on its own.
+        if (favoritesChanged) com.fongmi.android.tv.event.RefreshEvent.keep();
+
+        if (remoteUpdatedAt > 0) KVideoAccountStore.setLastUpdatedAt(account.getUsername(), remoteUpdatedAt);
         return items.size();
     }
 
@@ -260,6 +267,44 @@ public final class KVideoSyncEngine {
             String identifier = HistorySyncMapper.identifierFor(history.getVodName());
             if (!remoteIdentifiers.contains(identifier)) history.delete();
         }
+    }
+
+    /**
+     * Applies KVideo's favorites array to local Keep rows: adds/updates rows matching a
+     * remote item (keyed by source:videoId, not a title-based identifier - see
+     * FavoriteSyncMapper's class note), then deletes local Keep rows (for the current
+     * VOD config) whose source:videoId isn't present in the remote list, mirroring the
+     * same full-alignment tradeoff pull() already applies to history. Returns whether
+     * anything actually changed, so the caller can skip an unnecessary RefreshEvent.
+     */
+    private boolean applyRemoteFavorites(List<JsonObject> remoteItems) {
+        int cid = com.fongmi.android.tv.api.config.VodConfig.getCid();
+        java.util.Set<String> remoteIdentifiers = new java.util.HashSet<>();
+        boolean changed = false;
+        for (JsonObject item : remoteItems) {
+            String identifier = FavoriteSyncMapper.identifierFor(item);
+            remoteIdentifiers.add(identifier);
+            Keep existing = findLocalKeepByIdentifier(identifier, cid);
+            Keep updated = FavoriteSyncMapper.toKeep(item, existing);
+            if (updated == null) continue; // source doesn't name a configured Site
+            updated.save(cid);
+            changed = true;
+        }
+        for (Keep keep : Keep.getVod()) {
+            if (keep.getCid() != cid) continue;
+            if (!remoteIdentifiers.contains(FavoriteSyncMapper.identifierFor(keep))) {
+                keep.delete();
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private Keep findLocalKeepByIdentifier(String identifier, int cid) {
+        for (Keep keep : Keep.getVod()) {
+            if (keep.getCid() == cid && TextUtils.equals(FavoriteSyncMapper.identifierFor(keep), identifier)) return keep;
+        }
+        return null;
     }
 
     /** Pushes a single History row (whole-object overwrite of the "encrypted" field, per
@@ -292,6 +337,83 @@ public final class KVideoSyncEngine {
     private JsonArray existingFavorites(JsonObject existingPayload) {
         if (existingPayload == null || !existingPayload.has("favorites")) return new JsonArray();
         return existingPayload.getAsJsonArray("favorites");
+    }
+
+    private JsonArray existingHistory(JsonObject existingPayload) {
+        if (existingPayload == null || !existingPayload.has("history")) return new JsonArray();
+        return existingPayload.getAsJsonArray("history");
+    }
+
+    /** Pushes a newly-added Keep row: read-modify-write, touching only the favorites
+     *  array (history is carried over untouched, symmetric to how pushSingle() carries
+     *  favorites over untouched). Matches/replaces by source:videoId per
+     *  FavoriteSyncMapper's identifierFor(), same replace-or-append shape as
+     *  mergeHistoryItem() - though KVideo's own addFavorite() never actually overwrites
+     *  an existing entry (favorites-store.ts:44-71's `exists` check is a no-op on
+     *  duplicates), this mirrors that by just re-adding since Keep.save() is itself an
+     *  upsert on the webhtv side. */
+    public void pushFavoriteAdd(Keep keep) {
+        try {
+            AccountProfile account = requireActiveAccount();
+            UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+            SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+            JsonObject existingPayload = decryptExistingPayload(client, account.getUserGuid(), key);
+            JsonArray mergedFavorites = mergeFavoriteItem(existingPayload, keep);
+            JsonObject payload = new JsonObject();
+            payload.add("history", existingHistory(existingPayload));
+            payload.add("favorites", mergedFavorites);
+            String ciphertext = SyncCrypto.encrypt(key, payload.toString());
+            client.putEncryptedPayload(account.getUserGuid(), ciphertext);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push favorite add failed error=%s", e.getMessage());
+        }
+    }
+
+    /** Pushes a Keep removal: read-modify-write, dropping the matching favorites entry
+     *  (by source:videoId) while leaving history and every other favorite untouched. */
+    public void pushFavoriteRemove(Keep keep) {
+        try {
+            AccountProfile account = requireActiveAccount();
+            UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+            SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+            JsonObject existingPayload = decryptExistingPayload(client, account.getUserGuid(), key);
+            String identifier = FavoriteSyncMapper.identifierFor(keep);
+            JsonArray remaining = new JsonArray();
+            for (JsonElement element : existingFavorites(existingPayload)) {
+                if (!element.isJsonObject()) continue;
+                JsonObject item = element.getAsJsonObject();
+                if (!TextUtils.equals(FavoriteSyncMapper.identifierFor(item), identifier)) remaining.add(item);
+            }
+            JsonObject payload = new JsonObject();
+            payload.add("history", existingHistory(existingPayload));
+            payload.add("favorites", remaining);
+            String ciphertext = SyncCrypto.encrypt(key, payload.toString());
+            client.putEncryptedPayload(account.getUserGuid(), ciphertext);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push favorite remove failed error=%s", e.getMessage());
+        }
+    }
+
+    /** Replaces (by source:videoId) or appends this Keep's entry within the existing
+     *  remote favorites array, rather than uploading only this one item and losing the
+     *  rest - KVideo's SET overwrites the whole key, so a partial push would erase other
+     *  favorites entirely. */
+    private JsonArray mergeFavoriteItem(JsonObject existingPayload, Keep keep) {
+        JsonArray items = new JsonArray();
+        String identifier = FavoriteSyncMapper.identifierFor(keep);
+        boolean replaced = false;
+        for (JsonElement element : existingFavorites(existingPayload)) {
+            if (!element.isJsonObject()) continue;
+            JsonObject existingItem = element.getAsJsonObject();
+            if (TextUtils.equals(FavoriteSyncMapper.identifierFor(existingItem), identifier)) {
+                items.add(FavoriteSyncMapper.toKVideoItem(keep));
+                replaced = true;
+            } else {
+                items.add(existingItem);
+            }
+        }
+        if (!replaced) items.add(FavoriteSyncMapper.toKVideoItem(keep));
+        return items;
     }
 
     /** Replaces (by showIdentifier) or appends this History's entry within the existing
