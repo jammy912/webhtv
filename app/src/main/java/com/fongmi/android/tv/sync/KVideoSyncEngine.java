@@ -198,6 +198,11 @@ public final class KVideoSyncEngine {
     public int switchAccount(String username) throws Exception {
         KVideoAccountStore.setActiveUsername(username);
         History.delete(com.fongmi.android.tv.api.config.VodConfig.getCid());
+        // Force a real pull even if this account's updatedAt hasn't changed since last
+        // seen (e.g. re-selecting the same account as a manual refresh) - local history
+        // was just wiped above, so skipping here would leave it empty instead of
+        // repopulated.
+        KVideoAccountStore.setLastUpdatedAt(username, 0);
         return pull();
     }
 
@@ -208,11 +213,26 @@ public final class KVideoSyncEngine {
      *  see the class-level troubleshooting note). */
     public int pull() throws Exception {
         AccountProfile account = requireActiveAccount();
-        JsonObject payload = fetchDecryptedPayload(account);
-        if (payload == null) return 0;
+        UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+        JsonObject syncObject = client.getSyncObject(account.getUserGuid());
+        // Skip decrypt + per-row diffing entirely when nothing changed remotely since
+        // the last successful pull for this account - avoids unnecessary Upstash
+        // bandwidth and local DB writes on every 60s poll when the user hasn't watched
+        // anything new on KVideo's side.
+        long remoteUpdatedAt = syncObject.has("updatedAt") ? syncObject.get("updatedAt").getAsLong() : -1;
+        long lastSeenUpdatedAt = KVideoAccountStore.getLastUpdatedAt(account.getUsername());
+        if (remoteUpdatedAt > 0 && remoteUpdatedAt == lastSeenUpdatedAt) return 0;
+
+        JsonElement encryptedEl = syncObject.get("encrypted");
+        if (encryptedEl == null || encryptedEl.isJsonNull()) return 0;
+        SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+        String plaintext = SyncCrypto.decrypt(key, encryptedEl.getAsString());
+        JsonObject payload = JsonParser.parseString(plaintext).getAsJsonObject();
+
         List<JsonObject> items = HistorySyncMapper.readHistoryItems(payload);
         for (JsonObject item : items) applyRemoteItem(item);
         pruneLocalRowsNotInRemote(items);
+        if (remoteUpdatedAt > 0) KVideoAccountStore.setLastUpdatedAt(account.getUsername(), remoteUpdatedAt);
         // Without this, a background pull (pullIfStale) that writes new History rows
         // would leave an already-rendered "recent" list stale until the user manually
         // leaves and re-enters that screen - the write itself doesn't trigger any UI
@@ -260,12 +280,6 @@ public final class KVideoSyncEngine {
         } catch (Exception e) {
             com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push failed error=%s", e.getMessage());
         }
-    }
-
-    private JsonObject fetchDecryptedPayload(AccountProfile account) throws Exception {
-        UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
-        SecretKey key = SyncCrypto.deriveKey(account.getPassword());
-        return decryptExistingPayload(client, account.getUserGuid(), key);
     }
 
     private JsonObject decryptExistingPayload(UpstashSyncClient client, String userGuid, SecretKey key) throws Exception {

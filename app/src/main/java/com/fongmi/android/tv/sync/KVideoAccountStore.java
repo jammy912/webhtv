@@ -17,6 +17,7 @@ import com.github.catvod.utils.Prefers;
 public final class KVideoAccountStore {
 
     private static final String KEY_ACTIVE_USERNAME = "kvideo_active_username";
+    private static final String KEY_LAST_UPDATED_AT_PREFIX = "kvideo_last_updated_at_";
 
     private KVideoAccountStore() {
     }
@@ -40,5 +41,16 @@ public final class KVideoAccountStore {
 
     public static boolean hasActiveAccount() {
         return hasListSource() && !TextUtils.isEmpty(getActiveUsername());
+    }
+
+    /** Keyed per-username (not a single shared value) since each KVideo account has its
+     *  own independent updatedAt in its own user:sync:<GUID> record - switching accounts
+     *  must not compare against a stale value left over from a different account. */
+    public static long getLastUpdatedAt(String username) {
+        return Prefers.getLong(KEY_LAST_UPDATED_AT_PREFIX + username, 0);
+    }
+
+    public static void setLastUpdatedAt(String username, long updatedAt) {
+        Prefers.put(KEY_LAST_UPDATED_AT_PREFIX + username, updatedAt);
     }
 }
