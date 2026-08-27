@@ -75,9 +75,12 @@ public class HistorySyncMapper {
         // which for a pulled-in row is KVideo's *original* watch timestamp, not now.
         // Confirmed: a push right after playing showed KVideo's old date, not today.
         // A push is itself a "this was just watched" event, so "now" is always correct
-        // here regardless of what's cached on the History object. KVideo's timestamp
-        // is seconds-based (see toHistoryUpdate()'s timestampSec*1000L on the pull side).
-        item.addProperty("timestamp", System.currentTimeMillis() / 1000L);
+        // here regardless of what's cached on the History object. KVideo's timestamp is
+        // milliseconds (history-store.ts:115 - "const timestamp = Date.now()", no /1000
+        // conversion) - confirmed against KVideo's actual source, correcting an earlier
+        // wrong assumption here that it was seconds-based (which had been dividing by
+        // 1000 and producing a date ~1000x too far in the past on KVideo's side).
+        item.addProperty("timestamp", System.currentTimeMillis());
         item.addProperty("playbackPosition", toSeconds(history.getPosition()));
         item.addProperty("duration", toSeconds(history.getDuration()));
         if (!TextUtils.isEmpty(history.getVodPic())) item.addProperty("poster", history.getVodPic());
@@ -102,9 +105,10 @@ public class HistorySyncMapper {
         // History.get() filters out rows older than Constant.HISTORY_TIME; a freshly
         // built History defaults createTime to 0 (1970), which is always excluded -
         // that's why synced-in rows previously never showed up under "recent". KVideo's
-        // timestamp is seconds-based (see toKVideoItem toSeconds()), hence the *1000.
-        long timestampSec = getLong(kvideoItem, "timestamp", -1);
-        long remoteTimeMs = timestampSec > 0 ? timestampSec * 1000L : System.currentTimeMillis();
+        // timestamp is milliseconds (history-store.ts:115 - Date.now(), no conversion) -
+        // this used to multiply by 1000 assuming seconds, which was wrong.
+        long remoteTimeMs = getLong(kvideoItem, "timestamp", -1);
+        if (remoteTimeMs <= 0) remoteTimeMs = System.currentTimeMillis();
         if (existing == null || remoteTimeMs > existing.getCreateTime()) history.setCreateTime(remoteTimeMs);
         return history;
     }
