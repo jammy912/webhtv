@@ -212,12 +212,34 @@ public final class KVideoSyncEngine {
         if (payload == null) return 0;
         List<JsonObject> items = HistorySyncMapper.readHistoryItems(payload);
         for (JsonObject item : items) applyRemoteItem(item);
+        pruneLocalRowsNotInRemote(items);
         // Without this, a background pull (pullIfStale) that writes new History rows
         // would leave an already-rendered "recent" list stale until the user manually
         // leaves and re-enters that screen - the write itself doesn't trigger any UI
         // refresh on its own.
         if (!items.isEmpty()) com.fongmi.android.tv.event.RefreshEvent.history();
         return items.size();
+    }
+
+    /**
+     * Deletes local History rows (for the current VOD config) whose showIdentifier
+     * isn't present in this pull's remote response, so a deletion made on KVideo's side
+     * (or by another device) is reflected here too, not just adds/updates. Accepted
+     * tradeoff: a row webhtv itself just pushed can be pruned here if this pull raced
+     * ahead of that push actually landing in Upstash (pushSingle() and pull() aren't
+     * mutually exclusive) - the user explicitly chose full alignment over this edge
+     * case's risk.
+     */
+    private void pruneLocalRowsNotInRemote(List<JsonObject> remoteItems) {
+        java.util.Set<String> remoteIdentifiers = new java.util.HashSet<>();
+        for (JsonObject item : remoteItems) {
+            if (item.has("showIdentifier")) remoteIdentifiers.add(item.get("showIdentifier").getAsString());
+        }
+        int cid = com.fongmi.android.tv.api.config.VodConfig.getCid();
+        for (History history : History.get(cid)) {
+            String identifier = HistorySyncMapper.identifierFor(history.getVodName());
+            if (!remoteIdentifiers.contains(identifier)) history.delete();
+        }
     }
 
     /** Pushes a single History row (whole-object overwrite of the "encrypted" field, per
