@@ -17,6 +17,7 @@ import com.github.catvod.utils.Prefers;
 public final class KVideoAccountStore {
 
     private static final String KEY_ACTIVE_USERNAME = "kvideo_active_username";
+    private static final String KEY_ACTIVE_LOGO = "kvideo_active_logo";
     private static final String KEY_LAST_UPDATED_AT_PREFIX = "kvideo_last_updated_at_";
 
     private KVideoAccountStore() {
@@ -37,6 +38,18 @@ public final class KVideoAccountStore {
 
     public static void clearActiveAccount() {
         Prefers.put(KEY_ACTIVE_USERNAME, "");
+        Prefers.put(KEY_ACTIVE_LOGO, "");
+    }
+
+    /** Set alongside the active username on every switch, so the home logo (ImgUtil.logo)
+     *  can prefer the active account's own logo over VodConfig's shared one without a
+     *  network round-trip on every app launch. Empty when the active account has none. */
+    public static String getActiveLogo() {
+        return Prefers.getString(KEY_ACTIVE_LOGO);
+    }
+
+    public static void setActiveLogo(String logo) {
+        Prefers.put(KEY_ACTIVE_LOGO, logo == null ? "" : logo);
     }
 
     public static boolean hasActiveAccount() {

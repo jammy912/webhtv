@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.os.Bundle;
@@ -25,6 +26,9 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomViewTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -41,6 +45,7 @@ public final class ChoiceDialog extends DialogFragment {
     private String negative;
     private String neutral;
     private CharSequence[] items;
+    private String[] icons;
     private boolean[] checked;
     private int selected = -1;
     private boolean multi;
@@ -96,6 +101,17 @@ public final class ChoiceDialog extends DialogFragment {
         dialog.showCancel = showCancel;
         dialog.choice = choice;
         dialog.show(manager, ChoiceDialog.class.getSimpleName());
+    }
+
+    public static void showSingle(FragmentActivity activity, int titleRes, CharSequence[] items, String[] icons, int selected, OnChoice choice) {
+        ChoiceDialog dialog = new ChoiceDialog();
+        dialog.title = activity.getString(titleRes);
+        dialog.items = items == null ? new CharSequence[0] : Arrays.copyOf(items, items.length);
+        dialog.icons = icons == null ? null : Arrays.copyOf(icons, icons.length);
+        dialog.selected = selected;
+        dialog.showCancel = true;
+        dialog.choice = choice;
+        dialog.show(activity.getSupportFragmentManager(), ChoiceDialog.class.getSimpleName());
     }
 
     public static void showSingle(FragmentManager manager, CharSequence title, CharSequence[] items, int selected, String neutral, OnNeutral neutralAction, OnChoice choice) {
@@ -260,6 +276,7 @@ public final class ChoiceDialog extends DialogFragment {
         setItemEnabled(button, position);
         button.setText(itemText(position));
         styleItem(button, position);
+        loadItemIcon(button, position);
         button.setOnFocusChangeListener((view, hasFocus) -> styleItem(button, position));
         button.setOnClickListener(view -> onItemClick(position));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46));
@@ -270,6 +287,31 @@ public final class ChoiceDialog extends DialogFragment {
 
     private CharSequence itemText(int position) {
         return items[position];
+    }
+
+    private void loadItemIcon(MaterialButton button, int position) {
+        if (icons == null || position >= icons.length || TextUtils.isEmpty(icons[position])) return;
+        button.setIconGravity(MaterialButton.ICON_GRAVITY_START);
+        button.setIconPadding(dp(8));
+        button.setIconSize(dp(24));
+        Glide.with(button).asDrawable().load(icons[position]).circleCrop().into(new CustomViewTarget<MaterialButton, Drawable>(button) {
+            @Override
+            public void onResourceCleared(@Nullable Drawable placeholder) {
+            }
+
+            @Override
+            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                button.setIcon(resource);
+            }
+
+            @Override
+            protected void onResourceLoading(@Nullable Drawable placeholder) {
+            }
+
+            @Override
+            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+            }
+        });
     }
 
     private boolean itemSelected(int position) {

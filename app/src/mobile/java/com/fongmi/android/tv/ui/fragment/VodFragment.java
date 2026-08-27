@@ -439,6 +439,9 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
                 if (mWeb != null && mWeb.isVisible()) return;
                 getFragment().onRefresh();
                 break;
+            case LOGO:
+                setLogo();
+                break;
         }
     }
 

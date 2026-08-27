@@ -44,8 +44,9 @@ public final class KVideoAccountSwitcher {
             return;
         }
         CharSequence[] labels = profiles.stream().map(AccountProfile::getLabel).toArray(CharSequence[]::new);
+        String[] icons = profiles.stream().map(AccountProfile::getLogo).toArray(String[]::new);
         int selected = indexOfActive(profiles);
-        ChoiceDialog.showSingle(activity, R.string.kvideo_account_switch_title, labels, selected, which -> select(profiles.get(which)));
+        ChoiceDialog.showSingle(activity, R.string.kvideo_account_switch_title, labels, icons, selected, which -> select(profiles.get(which)));
     }
 
     private static int indexOfActive(List<AccountProfile> profiles) {
@@ -59,6 +60,8 @@ public final class KVideoAccountSwitcher {
         Task.execute(() -> {
             try {
                 int count = KVideoSyncEngine.get().switchAccount(profile.getUsername());
+                KVideoAccountStore.setActiveLogo(profile.getLogo());
+                com.fongmi.android.tv.event.RefreshEvent.logo();
                 App.post(() -> Notify.show(count > 0
                         ? App.get().getString(R.string.kvideo_account_pull_done, count)
                         : App.get().getString(R.string.kvideo_account_pull_empty)));

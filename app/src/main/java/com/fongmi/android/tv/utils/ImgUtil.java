@@ -41,7 +41,9 @@ public class ImgUtil {
 
     public static void logo(ImageView view) {
         try {
-            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
+            String accountLogo = com.fongmi.android.tv.sync.KVideoAccountStore.getActiveLogo();
+            String logo = TextUtils.isEmpty(accountLogo) ? VodConfig.get().getConfig().getLogo() : accountLogo;
+            Glide.with(view).load(UrlUtil.convert(logo)).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
         } catch (Throwable e) {
             e.printStackTrace();
         }

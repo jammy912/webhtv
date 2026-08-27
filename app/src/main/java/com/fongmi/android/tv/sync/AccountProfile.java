@@ -23,6 +23,8 @@ public class AccountProfile {
     private String accessToken;
     @SerializedName("userGuid")
     private String userGuid;
+    @SerializedName("logo")
+    private String logo;
 
     public String getLabel() {
         return label == null || label.isEmpty() ? username : label;
@@ -46,6 +48,10 @@ public class AccountProfile {
 
     public String getUserGuid() {
         return userGuid;
+    }
+
+    public String getLogo() {
+        return logo;
     }
 
     public boolean isUsable() {
