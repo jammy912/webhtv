@@ -327,6 +327,73 @@ public final class KVideoSyncEngine {
         }
     }
 
+    /** Pushes a single History removal: read-modify-write, dropping the matching history
+     *  entry (by showIdentifier) while leaving favorites and every other history row
+     *  untouched. Without this, deleting a row from the local history list (not via
+     *  playback quiescence) never reached Upstash, so the next pull()'s full-alignment
+     *  pass would see the row still present remotely and resurrect it locally -
+     *  confirmed as the cause of "deleted but comes back a minute later". */
+    public void pushHistoryRemove(History history) {
+        try {
+            AccountProfile account = requireActiveAccount();
+            UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+            SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+            JsonObject existingPayload = decryptExistingPayload(client, account.getUserGuid(), key);
+            String identifier = HistorySyncMapper.identifierFor(history.getVodName());
+            JsonArray remaining = new JsonArray();
+            for (JsonElement element : existingHistory(existingPayload)) {
+                if (!element.isJsonObject()) continue;
+                JsonObject item = element.getAsJsonObject();
+                boolean isSameShow = item.has("showIdentifier") && TextUtils.equals(item.get("showIdentifier").getAsString(), identifier);
+                if (!isSameShow) remaining.add(item);
+            }
+            JsonObject payload = new JsonObject();
+            payload.add("history", remaining);
+            payload.add("favorites", existingFavorites(existingPayload));
+            String ciphertext = SyncCrypto.encrypt(key, payload.toString());
+            client.putEncryptedPayload(account.getUserGuid(), ciphertext);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push history remove failed error=%s", e.getMessage());
+        }
+    }
+
+    /** Pushes an empty history array (favorites untouched), for "clear all history" -
+     *  an explicit product decision that clearing local history also clears KVideo's
+     *  cloud copy, not just this device's local rows. */
+    public void pushHistoryClear() {
+        try {
+            AccountProfile account = requireActiveAccount();
+            UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+            SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+            JsonObject existingPayload = decryptExistingPayload(client, account.getUserGuid(), key);
+            JsonObject payload = new JsonObject();
+            payload.add("history", new JsonArray());
+            payload.add("favorites", existingFavorites(existingPayload));
+            String ciphertext = SyncCrypto.encrypt(key, payload.toString());
+            client.putEncryptedPayload(account.getUserGuid(), ciphertext);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push history clear failed error=%s", e.getMessage());
+        }
+    }
+
+    /** Pushes an empty favorites array (history untouched), for "clear all favorites" -
+     *  symmetric to pushHistoryClear(). */
+    public void pushFavoritesClear() {
+        try {
+            AccountProfile account = requireActiveAccount();
+            UpstashSyncClient client = new UpstashSyncClient(account.getRedisUrl(), account.getAccessToken());
+            SecretKey key = SyncCrypto.deriveKey(account.getPassword());
+            JsonObject existingPayload = decryptExistingPayload(client, account.getUserGuid(), key);
+            JsonObject payload = new JsonObject();
+            payload.add("history", existingHistory(existingPayload));
+            payload.add("favorites", new JsonArray());
+            String ciphertext = SyncCrypto.encrypt(key, payload.toString());
+            client.putEncryptedPayload(account.getUserGuid(), ciphertext);
+        } catch (Exception e) {
+            com.github.catvod.crawler.SpiderDebug.log("kvideo-sync", "push favorites clear failed error=%s", e.getMessage());
+        }
+    }
+
     private JsonObject decryptExistingPayload(UpstashSyncClient client, String userGuid, SecretKey key) throws Exception {
         String encrypted = client.getEncryptedPayload(userGuid);
         if (TextUtils.isEmpty(encrypted)) return null;

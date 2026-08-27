@@ -64,6 +64,10 @@ public final class PlaybackProgressWriter {
         input.vodId = history.getVodId();
         input.episodeName = history.getVodRemarks();
         input.deletedAt = System.currentTimeMillis();
+        // Without this, a row deleted here never reaches Upstash, so the next
+        // background pull()'s full-alignment pass sees the row still present remotely
+        // and resurrects it locally (confirmed: "deleted but comes back a minute later").
+        com.fongmi.android.tv.sync.KVideoSyncCollector.get().onHistoryRemoved(history);
         return deleteInternal(input, null, false, true);
     }
 
@@ -74,6 +78,7 @@ public final class PlaybackProgressWriter {
         input.scope = "all";
         input.confirm = true;
         input.deletedAt = System.currentTimeMillis();
+        com.fongmi.android.tv.sync.KVideoSyncCollector.get().onHistoryCleared();
         return deleteInternal(input, null, false, true);
     }
 

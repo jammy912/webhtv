@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
+import com.fongmi.android.tv.sync.KVideoSyncCollector;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
@@ -49,6 +50,7 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
         super.clear();
         setDelete(false);
         Keep.deleteAll();
+        KVideoSyncCollector.get().onFavoritesCleared();
     }
 
     @NonNull

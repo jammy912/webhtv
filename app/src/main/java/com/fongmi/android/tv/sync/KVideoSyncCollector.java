@@ -90,6 +90,31 @@ public final class KVideoSyncCollector {
         Task.execute(() -> KVideoSyncEngine.get().pushFavoriteRemove(keep));
     }
 
+    /** Deleting a row from the history list is unrelated to playback quiescence (no
+     *  canSave() gate - a deleted row's playability doesn't matter here), and must push
+     *  immediately: without this, a row deleted from HistoryActivity/HomeActivity's list
+     *  UI never reaches Upstash, so the next background pull() resurrects it locally
+     *  (confirmed: "deleted but comes back a minute later"). */
+    public void onHistoryRemoved(@Nullable History history) {
+        if (!isEnabled() || history == null) return;
+        History snapshot = history.copy();
+        Task.execute(() -> KVideoSyncEngine.get().pushHistoryRemove(snapshot));
+    }
+
+    /** "Clear all history" - an explicit product decision that this also clears KVideo's
+     *  cloud copy, not just local rows (see FORK-SYNC-GUIDELINE.md). */
+    public void onHistoryCleared() {
+        if (!isEnabled()) return;
+        Task.execute(() -> KVideoSyncEngine.get().pushHistoryClear());
+    }
+
+    /** "Clear all favorites" (KeepAdapter.clear(), mobile only - leanback's KeepActivity
+     *  has no bulk-clear action), symmetric to onHistoryCleared(). */
+    public void onFavoritesCleared() {
+        if (!isEnabled()) return;
+        Task.execute(() -> KVideoSyncEngine.get().pushFavoritesClear());
+    }
+
     private void schedulePush(History history, List<String> episodeNames) {
         Runnable task = () -> Task.execute(() -> KVideoSyncEngine.get().pushSingle(history, episodeNames));
         Runnable previous = pendingPush.getAndSet(task);

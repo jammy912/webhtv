@@ -20,6 +20,7 @@ import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.databinding.ActivityKeepBinding;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
+import com.fongmi.android.tv.sync.KVideoSyncCollector;
 import com.fongmi.android.tv.ui.adapter.KeepAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.SyncDialog;
@@ -111,6 +112,7 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
         mAdapter.remove(item.delete(), () -> {
             if (mAdapter.getItemCount() == 0) mAdapter.setDelete(false);
         });
+        KVideoSyncCollector.get().onFavoriteRemoved(item);
     }
 
     @Override
