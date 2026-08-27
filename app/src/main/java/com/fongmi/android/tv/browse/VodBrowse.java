@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -252,23 +253,30 @@ class VodBrowse {
         Episode episode = flag.getEpisodes().get(entry.index);
         Result result = SiteApi.playerContent(entry.siteKey, entry.flagName, episode.getUrl());
         if (TextUtils.isEmpty(result.getRealUrl())) return null;
-        updateHistory(episode);
+        updateHistory(episode, flag);
         BrowseTree.putBrowseResult(mediaId, result);
         String vodName = vod.getName();
         if (TextUtils.isEmpty(vodName) && browseHistory != null) vodName = browseHistory.getVodName();
         return BrowseTree.stream(mediaId, result.getRealUrl(), vodName, episode.getName(), entry.vodPic);
     }
 
-    private static void updateHistory(@NonNull Episode episode) {
+    private static void updateHistory(@NonNull Episode episode, @Nullable Flag flag) {
         if (browseHistory == null) return;
         browseHistory.setVodRemarks(episode.getName());
         browseHistory.setEpisodeUrl(episode.getUrl());
-        PlaybackEventCollector.get().updateHistory(browseHistory);
+        PlaybackEventCollector.get().updateHistory(browseHistory, episodeNames(flag));
     }
 
     private static void setBrowseHistory(@Nullable History history) {
         browseHistory = history;
         PlaybackEventCollector.get().updateHistory(history);
+    }
+
+    private static List<String> episodeNames(@Nullable Flag flag) {
+        if (flag == null || flag.getEpisodes() == null) return Collections.emptyList();
+        List<String> names = new ArrayList<>();
+        for (Episode episode : flag.getEpisodes()) names.add(episode.getName());
+        return names;
     }
 
     @Nullable

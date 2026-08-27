@@ -8,7 +8,7 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.sync.KVideoSyncCollector;
 
-import java.util.Collections;
+import java.util.List;
 
 public final class PlaybackEventCollector {
 
@@ -42,13 +42,22 @@ public final class PlaybackEventCollector {
         PlaybackRuntime.updateHistory(history);
     }
 
+    /** episodeNames should be the current Flag's episode names in playback order (e.g.
+     *  VideoActivity's getFlag().getEpisodes() mapped to name), so KVideoSyncCollector
+     *  can push a full episode list instead of an empty one - without it, KVideo can't
+     *  resolve the pushed episodeIndex back to a display label (confirmed: KVideo's
+     *  history card showed no episode text, though playback via url still worked). */
+    public void updateHistory(@Nullable History history, @Nullable List<String> episodeNames) {
+        PlaybackRuntime.updateHistory(history, episodeNames);
+    }
+
     public synchronized void onProgress(@Nullable History history, @Nullable PlayerManager player) {
         updateHistory(history);
         PlaybackRecord record = snapshot(history, player, PROGRESS);
         if (record == null || player == null || !player.isPlaying()) return;
         if (!started) startIfNeeded(record, history);
         sender.scheduleProgress(record);
-        KVideoSyncCollector.get().onPlaying(history, Collections.emptyList());
+        KVideoSyncCollector.get().onPlaying(history, PlaybackRuntime.currentEpisodeNames());
     }
 
     public synchronized void onPlaybackStateChanged(@Nullable PlayerManager player, int state) {
@@ -60,7 +69,7 @@ public final class PlaybackEventCollector {
             sender.scheduleProgress(record.withEvent(PROGRESS));
         } else if (state == Player.STATE_ENDED) {
             if (started) sender.sendFinalThen(record, ENDED);
-            KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
+            KVideoSyncCollector.get().onQuiescent(history, PlaybackRuntime.currentEpisodeNames());
             resetStarted();
         }
     }
@@ -75,7 +84,7 @@ public final class PlaybackEventCollector {
             sender.scheduleProgress(record.withEvent(PROGRESS));
         } else if (started && lastPlaying && player != null && player.getPlaybackState() == Player.STATE_READY) {
             sender.sendFinalThen(record, PAUSE);
-            KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
+            KVideoSyncCollector.get().onQuiescent(history, PlaybackRuntime.currentEpisodeNames());
         }
         lastPlaying = isPlaying;
     }
@@ -84,7 +93,7 @@ public final class PlaybackEventCollector {
         History history = current(player);
         PlaybackRecord record = snapshot(history, player, "");
         if (record != null && started) sender.sendFinalThen(record, STOP);
-        KVideoSyncCollector.get().onQuiescent(history, Collections.emptyList());
+        KVideoSyncCollector.get().onQuiescent(history, PlaybackRuntime.currentEpisodeNames());
         resetStarted();
     }
 

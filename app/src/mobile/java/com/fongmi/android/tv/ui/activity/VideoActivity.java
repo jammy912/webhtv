@@ -171,6 +171,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -482,6 +483,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             if (!items.isEmpty()) return items.get(0);
         }
         return mEpisodeAdapter == null || mEpisodeAdapter.isEmpty() ? null : mEpisodeAdapter.getActivated();
+    }
+
+    /** Current Flag's episode names in playback order, for KVideoSyncCollector (via
+     *  PlaybackEventCollector.updateHistory) to push a full episodes[] list rather than
+     *  an empty one - see PlaybackRuntime.updateHistory(History, List). */
+    private List<String> getEpisodeNames() {
+        Flag flag = getFlag();
+        if (flag == null || flag.getEpisodes() == null) return Collections.emptyList();
+        List<String> names = new ArrayList<>();
+        for (Episode episode : flag.getEpisodes()) names.add(episode.getName());
+        return names;
     }
 
     private String getEpisodePlayFlag(Flag flag, Episode episode) {
@@ -4226,7 +4238,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getDefaultSpeed()));
         mHistory.setSpeed(player().getSpeed());
         mHistory.setVodName(item.getName());
-        PlaybackEventCollector.get().updateHistory(mHistory);
+        PlaybackEventCollector.get().updateHistory(mHistory, getEpisodeNames());
         setArtwork(getInitialArtwork(item));
         setScale(getScale());
     }
@@ -4314,7 +4326,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mHistory.setVodFlag(vodFlag);
         mHistory.setVodRemarks(item.getName());
         mHistory.setEpisodeUrl(item.getUrl());
-        PlaybackEventCollector.get().updateHistory(mHistory);
+        PlaybackEventCollector.get().updateHistory(mHistory, getEpisodeNames());
     }
 
     private void checkControl() {
@@ -4375,7 +4387,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (pic || name) syncHistory();
         if (pic || name) updateKeep();
         if (id) updateNavigationKey();
-        PlaybackEventCollector.get().updateHistory(mHistory);
+        PlaybackEventCollector.get().updateHistory(mHistory, getEpisodeNames());
         setText(item);
     }
 
@@ -5738,7 +5750,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (position > 0) mHistory.setPosition(position);
         if (duration > 0) mHistory.setDuration(duration);
         else if (mHistory.getDuration() < 0) mHistory.setDuration(0);
-        PlaybackEventCollector.get().updateHistory(mHistory);
+        PlaybackEventCollector.get().updateHistory(mHistory, getEpisodeNames());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -8,11 +8,14 @@ import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.player.PlayerManager;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 final class PlaybackRuntime {
 
     private static volatile History currentHistory;
+    private static volatile List<String> currentEpisodeNames = Collections.emptyList();
     private static volatile WeakReference<PlayerManager> currentPlayer = new WeakReference<>(null);
     private static String sessionId;
     private static String sessionSignature;
@@ -33,6 +36,20 @@ final class PlaybackRuntime {
 
     static void updateHistory(@Nullable History history) {
         currentHistory = history == null ? null : history.copy();
+    }
+
+    /** episodeNames rides alongside history as a snapshot of the current Flag's episode
+     *  list (in playback order), since History itself has no such field. Consumed by
+     *  KVideoSyncCollector via currentEpisodeNames() so PlaybackService (a background
+     *  service with no Activity/Vod/Flag access) can still supply the full episode list
+     *  KVideo needs to resolve episodeIndex back to a display name. */
+    static void updateHistory(@Nullable History history, @Nullable List<String> episodeNames) {
+        currentHistory = history == null ? null : history.copy();
+        currentEpisodeNames = episodeNames == null ? Collections.emptyList() : episodeNames;
+    }
+
+    static List<String> currentEpisodeNames() {
+        return currentEpisodeNames;
     }
 
     static History currentHistory() {
