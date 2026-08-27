@@ -48,6 +48,7 @@ public final class PlaybackEventCollector {
         if (record == null || player == null || !player.isPlaying()) return;
         if (!started) startIfNeeded(record, history);
         sender.scheduleProgress(record);
+        KVideoSyncCollector.get().onPlaying(history, Collections.emptyList());
     }
 
     public synchronized void onPlaybackStateChanged(@Nullable PlayerManager player, int state) {
