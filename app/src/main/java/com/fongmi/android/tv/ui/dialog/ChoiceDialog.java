@@ -294,6 +294,7 @@ public final class ChoiceDialog extends DialogFragment {
         button.setIconGravity(MaterialButton.ICON_GRAVITY_START);
         button.setIconPadding(dp(8));
         button.setIconSize(dp(24));
+        button.setIconTint(null);
         Glide.with(button).asDrawable().load(icons[position]).circleCrop().into(new CustomViewTarget<MaterialButton, Drawable>(button) {
             @Override
             public void onResourceCleared(@Nullable Drawable placeholder) {
