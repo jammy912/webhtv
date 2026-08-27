@@ -68,11 +68,16 @@ public class HistorySyncMapper {
         item.addProperty("url", history.getEpisodeUrl());
         item.addProperty("episodeIndex", resolveEpisodeIndex(history.getVodRemarks(), episodeNames));
         item.addProperty("source", history.getSiteKey());
-        // KVideo's timestamp is seconds-based (see toHistoryUpdate()'s timestampSec*1000L
-        // on the pull side) - history.getUpdateTime()/getCreateTime() are milliseconds,
-        // so this must divide by 1000 or KVideo computes a wildly wrong "days ago".
-        long timeMs = history.getUpdateTime() > 0 ? history.getUpdateTime() : history.getCreateTime();
-        item.addProperty("timestamp", timeMs / 1000L);
+        // Always "now", not history.getUpdateTime()/getCreateTime(): updateTime is a
+        // transient field only set by History.save() - if this History instance never
+        // went through save() during this playback session (progress can be persisted
+        // through other paths), updateTime stays 0 and this fell back to createTime,
+        // which for a pulled-in row is KVideo's *original* watch timestamp, not now.
+        // Confirmed: a push right after playing showed KVideo's old date, not today.
+        // A push is itself a "this was just watched" event, so "now" is always correct
+        // here regardless of what's cached on the History object. KVideo's timestamp
+        // is seconds-based (see toHistoryUpdate()'s timestampSec*1000L on the pull side).
+        item.addProperty("timestamp", System.currentTimeMillis() / 1000L);
         item.addProperty("playbackPosition", toSeconds(history.getPosition()));
         item.addProperty("duration", toSeconds(history.getDuration()));
         if (!TextUtils.isEmpty(history.getVodPic())) item.addProperty("poster", history.getVodPic());
