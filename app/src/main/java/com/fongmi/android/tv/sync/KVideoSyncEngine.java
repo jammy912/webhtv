@@ -263,7 +263,7 @@ public final class KVideoSyncEngine {
             if (item.has("showIdentifier")) remoteIdentifiers.add(item.get("showIdentifier").getAsString());
         }
         int cid = com.fongmi.android.tv.api.config.VodConfig.getCid();
-        for (History history : History.get(cid)) {
+        for (History history : History.findAll(cid)) {
             String identifier = HistorySyncMapper.identifierFor(history.getVodName());
             if (!remoteIdentifiers.contains(identifier)) history.delete();
         }
@@ -522,7 +522,7 @@ public final class KVideoSyncEngine {
 
     private History findLocalByIdentifier(String identifier, int cid) {
         if (TextUtils.isEmpty(identifier)) return null;
-        for (History history : History.get(cid)) {
+        for (History history : History.findAll(cid)) {
             if (TextUtils.equals(HistorySyncMapper.identifierFor(history.getVodName()), identifier)) return history;
         }
         return null;

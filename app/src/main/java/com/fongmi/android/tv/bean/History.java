@@ -121,6 +121,13 @@ public class History implements Diffable<History> {
         return AppDatabase.get().getHistoryDao().find(cid, System.currentTimeMillis() - Constant.HISTORY_TIME);
     }
 
+    /** Unlike get(cid), not limited to the last 180 days - for sync comparisons
+     *  (KVideoSyncEngine) where a row older than that window must still be found/
+     *  compared, not silently treated as absent. */
+    public static List<History> findAll(int cid) {
+        return AppDatabase.get().getHistoryDao().findAll(cid);
+    }
+
     public static History find(String key) {
         return AppDatabase.get().getHistoryDao().find(VodConfig.getCid(), key);
     }
