@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:nextFocusUp="@id/title"
+            android:nextFocusUp="@id/logo"
             android:nextFocusDown="@id/recycler"
             android:paddingStart="24dp"
             android:paddingTop="4dp"
@@ -77,6 +77,10 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:nextFocusDown="@id/typeRecycler"
             android:src="@drawable/ic_logo" />
 
         <com.fongmi.android.tv.ui.custom.CustomTitleView
