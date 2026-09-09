@@ -37,6 +37,56 @@ public class MpvAutoOutputPolicyTest {
     }
 
     @Test
+    public void keepsSurfaceDirectForUnsupportedDv7WhenHdr10FallbackIsEnabled() {
+        MpvAutoOutputPolicy.Decision decision = MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED, 7, true);
+        assertTrue(decision.eligible());
+        assertEquals("dv7-hdr10-base-layer", decision.reason());
+        assertEquals(MpvAutoOutputPolicy.Transition.KEEP_SURFACE_DIRECT,
+                MpvAutoOutputPolicy.transition(decision.eligible(), true));
+    }
+
+    @Test
+    public void doesNotPinUnsupportedDv7WithoutHdr10Fallback() {
+        assertFalse(MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED, 7, false).eligible());
+    }
+
+    @Test
+    public void usesHevcHdr10ForUnsupportedProfile8Only() {
+        MpvAutoOutputPolicy.Decision decision = MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED, 8, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.SUPPORTED);
+        assertTrue(decision.eligible());
+        assertEquals("dv8-hdr10-base-layer", decision.reason());
+    }
+
+    @Test
+    public void keepsProfile8SoftwareWhenHevcCapabilityIsUnknownOrUnsupported() {
+        assertFalse(MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED, 8, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN).eligible());
+        assertFalse(MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED, 8, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED).eligible());
+    }
+
+    @Test
+    public void nativeProfile8AlwaysWinsOverHdr10Fallback() {
+        MpvAutoOutputPolicy.Decision decision = MpvAutoOutputPolicy.evaluate(
+                3840, 2160, true, true, false, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.SUPPORTED, 8, false,
+                MpvAutoOutputPolicy.DolbyVisionSupport.SUPPORTED);
+        assertTrue(decision.eligible());
+        assertEquals("dolby-vision-hw-supported", decision.reason());
+    }
+
+    @Test
     public void evaluatesFourKBeforeTracksAreComplete() {
         assertTrue(MpvAutoOutputPolicy.canEvaluateWithoutTracks(3840, 1606));
     }
@@ -45,6 +95,26 @@ public class MpvAutoOutputPolicyTest {
     public void evaluatesKnownSizeBeforeTracksAreComplete() {
         assertTrue(MpvAutoOutputPolicy.canEvaluateWithoutTracks(1920, 1080));
         assertTrue(MpvAutoOutputPolicy.canEvaluateWithoutTracks(3840, 2160));
+    }
+
+    @Test
+    public void revealsSuccessfulDirectFrameBeforeTrackMetadataCompletes() {
+        assertTrue(MpvAutoOutputPolicy.canRevealDirectFrame(
+                true, false, true, true, 3840, 2160));
+    }
+
+    @Test
+    public void keepsShutterForUnprovenOrNonDirectOutput() {
+        assertFalse(MpvAutoOutputPolicy.canRevealDirectFrame(
+                true, false, false, true, 3840, 2160));
+        assertFalse(MpvAutoOutputPolicy.canRevealDirectFrame(
+                true, false, true, false, 3840, 2160));
+        assertFalse(MpvAutoOutputPolicy.canRevealDirectFrame(
+                true, false, true, true, 0, 2160));
+        assertFalse(MpvAutoOutputPolicy.canRevealDirectFrame(
+                true, true, true, true, 3840, 2160));
+        assertFalse(MpvAutoOutputPolicy.canRevealDirectFrame(
+                false, false, true, true, 3840, 2160));
     }
 
     @Test

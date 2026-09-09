@@ -231,11 +231,30 @@ apply_media_patches() {
   local patch_dir="$THIRD_PARTY_DIR/patches"
   local patch_file
   [[ -d "$patch_dir" ]] || return 0
-  for patch_file in "$patch_dir"/media3-*.patch; do
+  # Keep dependency and release order explicit instead of relying on filesystem glob order.
+  local patches=(
+    "$patch_dir/media3-danmaku-live.patch"
+    "$patch_dir/media3-dolby-vision-matroska.patch"
+    "$patch_dir/media3-upstream-playback-fixes-2026-08.patch"
+    "$patch_dir/media3-exo-hdr-parser-safety.patch"
+    "$patch_dir/media3-deferred-cues.patch"
+    "$patch_dir/media3-exo-pixel-eac3-joc-guard.patch"
+    "$patch_dir/media3-exo-dts-14bit-frame-size.patch"
+    "$patch_dir/media3-exo-subtitle-byte-safety.patch"
+    "$patch_dir/media3-exo-cue-data-contract.patch"
+    "$patch_dir/media3-exo-bounded-cache-writer.patch"
+    "$patch_dir/media3-exo-iso-reader-safety.patch"
+    "$patch_dir/media3-exo-iso-multi-extent.patch"
+    "$patch_dir/media3-precache-hls-safety.patch"
+    "$patch_dir/media3-exo-av3a-mp4.patch"
+    "$patch_dir/media3-exo-av3a-dash-channel-config.patch"
+    "$patch_dir/media3-exo-alac-wave.patch"
+  )
+  for patch_file in "${patches[@]}"; do
     [[ -f "$patch_file" ]] || continue
     echo "Applying Media3 patch $(basename "$patch_file")"
-    git -C "$MEDIA_DIR" apply --check "$patch_file"
-    git -C "$MEDIA_DIR" apply "$patch_file"
+    git -C "$MEDIA_DIR" apply --check --unidiff-zero "$patch_file"
+    git -C "$MEDIA_DIR" apply --unidiff-zero "$patch_file"
   done
 }
 
@@ -244,6 +263,7 @@ apply_nextlib_patches() {
   local patches=(
     "$THIRD_PARTY_DIR/patches/nextlib-ffmpeg-soft-load-shedding.patch"
     "$THIRD_PARTY_DIR/patches/nextlib-av3a.patch"
+    "$THIRD_PARTY_DIR/patches/nextlib-ape-support.patch"
   )
   for patch_file in "${patches[@]}"; do
     if [[ ! -f "$patch_file" ]]; then
@@ -251,8 +271,8 @@ apply_nextlib_patches() {
       exit 1
     fi
     echo "Applying nextlib patch $(basename "$patch_file")"
-    git -C "$NEXTLIB_DIR" apply --check "$patch_file"
-    git -C "$NEXTLIB_DIR" apply "$patch_file"
+    git -C "$NEXTLIB_DIR" apply --recount --check "$patch_file"
+    git -C "$NEXTLIB_DIR" apply --recount "$patch_file"
   done
 }
 

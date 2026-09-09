@@ -546,10 +546,11 @@ public final class PlaybackPerformanceDialog extends DialogFragment {
             case PlaybackPerformanceCatalog.DECODER_FALLBACK -> onOff(PlaybackPerformanceSetting.isDecoderFallbackEnabled());
             case PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK ->
                     PlayerSetting.getPlayer() == PlayerSetting.MPV
-                            ? onOff(PlaybackPerformanceSetting.isDv7Hdr10FallbackEnabled())
+                            ? PlaybackPerformanceSetting.getMpvDv7HandlingText()
                             : PlaybackPerformanceSetting.getDv7HandlingText();
             case PlaybackPerformanceCatalog.SOFT_VIDEO_TUNE -> onOff(PlaybackPerformanceSetting.isSoftVideoTuneEnabled());
             case PlaybackPerformanceCatalog.AUDIO_PASSTHROUGH -> onOff(PlayerSetting.isAudioPassThrough());
+            case PlaybackPerformanceCatalog.MPV_MULTICHANNEL_AUDIO -> MpvPerformanceSetting.getMultichannelAudioText();
             case PlaybackPerformanceCatalog.PREFER_AAC -> onOff(PlayerSetting.isPreferAAC());
             case PlaybackPerformanceCatalog.AUDIO_SOFT_PREFER -> onOff(PlayerSetting.isAudioPrefer());
             case PlaybackPerformanceCatalog.VIDEO_SOFT_PREFER -> onOff(PlayerSetting.isVideoPrefer());
@@ -627,8 +628,12 @@ public final class PlaybackPerformanceDialog extends DialogFragment {
             case PlaybackPerformanceCatalog.DECODER_FALLBACK -> () -> toggle(PlaybackPerformanceSetting::isDecoderFallbackEnabled, PlaybackPerformanceSetting::putDecoderFallbackEnabled);
             case PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK -> () -> {
                 if (PlayerSetting.getPlayer() == PlayerSetting.MPV) {
-                    toggle(PlaybackPerformanceSetting::isDv7Hdr10FallbackEnabled,
-                            PlaybackPerformanceSetting::putDv7Hdr10FallbackEnabled);
+                    int mode = PlaybackPerformanceSetting.getMpvDv7HandlingMode();
+                    PlaybackPerformanceSetting.putMpvDv7HandlingMode(
+                            mode == PlaybackPerformanceSetting.DV7_HANDLING_P81
+                                    ? PlaybackPerformanceSetting.DV7_HANDLING_HDR10
+                                    : PlaybackPerformanceSetting.DV7_HANDLING_P81);
+                    refresh();
                     return;
                 }
                 int mode = PlaybackPerformanceSetting.getDv7HandlingMode();
@@ -640,6 +645,13 @@ public final class PlaybackPerformanceDialog extends DialogFragment {
             };
             case PlaybackPerformanceCatalog.SOFT_VIDEO_TUNE -> () -> toggle(PlaybackPerformanceSetting::isSoftVideoTuneEnabled, PlaybackPerformanceSetting::putSoftVideoTuneEnabled);
             case PlaybackPerformanceCatalog.AUDIO_PASSTHROUGH -> () -> togglePlayer(id, PlayerSetting::isAudioPassThrough, PlayerSetting::putAudioPassThrough);
+            case PlaybackPerformanceCatalog.MPV_MULTICHANNEL_AUDIO -> () -> {
+                MpvPerformanceSetting.putMultichannelAudioMode(
+                        MpvPerformanceSetting.isMultichannelPcm()
+                                ? MpvPerformanceSetting.MULTICHANNEL_STEREO_COMPAT
+                                : MpvPerformanceSetting.MULTICHANNEL_PCM);
+                refresh();
+            };
             case PlaybackPerformanceCatalog.PREFER_AAC -> () -> togglePlayer(id, PlayerSetting::isPreferAAC, PlayerSetting::putPreferAAC);
             case PlaybackPerformanceCatalog.AUDIO_SOFT_PREFER -> () -> togglePlayer(id, PlayerSetting::isAudioPrefer, PlayerSetting::putAudioPrefer);
             case PlaybackPerformanceCatalog.VIDEO_SOFT_PREFER -> () -> togglePlayer(id, PlayerSetting::isVideoPrefer, PlayerSetting::putVideoPrefer);
