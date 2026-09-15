@@ -172,6 +172,7 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
     private final Runnable initialTrackSelectionGateTimeoutRunnable;
     private final Runnable isoTrackMetadataReadyListener;
     private final MpvHlsProxy hlsProxy;
+    private final MpvSmbProxy smbProxy;
     private final MpvAutoCacheBaselineState autoCacheBaselineState;
     private final MpvAutoHlsBitrateState autoHlsBitrateState;
     private final MpvCacheObserverState cacheObserverState;
@@ -390,6 +391,7 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
                 () -> releaseInitialTrackSelectionGate("timeout");
         isoTrackMetadataReadyListener = this::onIsoTrackMetadataReady;
         hlsProxy = new MpvHlsProxy();
+        smbProxy = new MpvSmbProxy();
         autoCacheBaselineState = new MpvAutoCacheBaselineState();
         autoHlsBitrateState = new MpvAutoHlsBitrateState();
         recentLogs = new ArrayList<>();
@@ -611,6 +613,7 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
         try {
             stopInternal(false);
             hlsProxy.release();
+            smbProxy.release();
             clearVideoOutput();
             mainHandler.removeCallbacks(stateRefreshRunnable);
             mainHandler.removeCallbacks(endFileValidationRunnable);
@@ -1308,6 +1311,15 @@ public final class MpvPlayer extends SimpleBasePlayer implements MPVLib.EventObs
         if (!mediaReplacementCoordinator.isCurrent(generation)) return;
         try {
             String sourceMime = mediaItem == null || mediaItem.localConfiguration == null ? null : mediaItem.localConfiguration.mimeType;
+            if (MpvSmbProxy.isSmb(currentPlayableUri)) {
+                // libmpv is built without SMB support, so republish the share over
+                // loopback HTTP and let MPV open that instead.
+                String originalUri = currentPlayableUri;
+                currentPlayableUri = smbProxy.proxy(originalUri);
+                if (shouldCollectDebugDetails()) PlaybackTrace.log("mpv", playbackTraceId, "smb proxy enabled original=%s proxy=%s", MpvDiagnosticsPolicy.sourceSummary(originalUri), MpvDiagnosticsPolicy.sourceSummary(currentPlayableUri));
+            } else {
+                smbProxy.clear();
+            }
             resourceClassification = PlaybackResourceClassifier.classifyRequest(currentPlayableUri, sourceMime, sourceMime);
             if (currentIsoUri != null) {
                 currentLikelyHls = false;
