@@ -10,6 +10,7 @@ import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.SmbItem;
 import com.fongmi.android.tv.databinding.AdapterSmbBinding;
+import com.fongmi.android.tv.smb.ThumbLoader;
 import com.fongmi.android.tv.ui.adapter.SmbAdapter;
 
 import java.io.File;
@@ -19,6 +20,7 @@ public class SmbHolder extends RecyclerView.ViewHolder {
 
     private final SmbAdapter.OnClickListener listener;
     private final AdapterSmbBinding binding;
+    private SmbItem item;
 
     public SmbHolder(@NonNull AdapterSmbBinding binding, SmbAdapter.OnClickListener listener) {
         super(binding.getRoot());
@@ -33,11 +35,17 @@ public class SmbHolder extends RecyclerView.ViewHolder {
     }
 
     public void initView(SmbItem item) {
+        this.item = item;
         binding.name.setText(item.getName());
         binding.remark.setText(item.isDir() ? "" : format(item.getSize()));
         binding.remark.setVisibility(item.isDir() ? View.GONE : View.VISIBLE);
         binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
         setImage(item);
+        if (item.getThumbState() == SmbItem.THUMB_NONE) listener.onThumbNeeded(item, size());
+    }
+
+    private int[] size() {
+        return new int[]{binding.image.getLayoutParams().width, binding.image.getLayoutParams().height};
     }
 
     private void setImage(SmbItem item) {
@@ -45,6 +53,7 @@ public class SmbHolder extends RecyclerView.ViewHolder {
         // Glide only ever sees a local file here; the SMB read happens earlier in
         // the thumbnail pipeline, never on the bind thread.
         if (!item.isDir() && !TextUtils.isEmpty(thumb) && new File(thumb).exists()) {
+            binding.image.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             Glide.with(binding.image).load(new File(thumb)).centerCrop().into(binding.image);
         } else {
             Glide.with(binding.image).clear(binding.image);
@@ -55,6 +64,7 @@ public class SmbHolder extends RecyclerView.ViewHolder {
 
     public void unbind() {
         Glide.with(binding.image).clear(binding.image);
+        if (item != null) ThumbLoader.cancel(item);
     }
 
     private static String format(long size) {

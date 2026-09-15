@@ -21,10 +21,16 @@ import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.databinding.ActivitySmbBinding;
 import com.fongmi.android.tv.model.SmbViewModel;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.smb.SmbExecutors;
+import com.fongmi.android.tv.smb.ThumbCache;
+import com.fongmi.android.tv.smb.ThumbLoader;
 import com.fongmi.android.tv.ui.adapter.SmbAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.utils.Notify;
 
+import android.net.Uri;
+
+import java.io.File;
 import java.util.List;
 
 public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListener {
@@ -70,6 +76,8 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SmbViewModel.class);
         mViewModel.getState().observe(this, this::onState);
+        ThumbLoader.reset();
+        SmbExecutors.io().execute(ThumbCache::trim);
     }
 
     /**
@@ -114,8 +122,21 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
             mViewModel.enter(item);
         } else {
             // push_agent plays the id verbatim, so the smb:// URL goes straight through.
-            VideoActivity.start(this, SiteApi.PUSH, item.getUrl(), item.getName(), item.getThumb());
+            VideoActivity.start(this, SiteApi.PUSH, item.getUrl(), item.getName(), thumbUri(item));
         }
+    }
+
+    /** VideoActivity preloads this through Glide, which needs a URI not a path. */
+    private String thumbUri(SmbItem item) {
+        String thumb = item.getThumb();
+        return TextUtils.isEmpty(thumb) ? "" : Uri.fromFile(new File(thumb)).toString();
+    }
+
+    @Override
+    public void onThumbNeeded(SmbItem item, int[] size) {
+        item.setThumbState(SmbItem.THUMB_LOADING);
+        ThumbLoader.request(item, size[0], size[1], (target, path, ok) ->
+                mViewModel.update(target.withThumb(path, ok ? SmbItem.THUMB_READY : SmbItem.THUMB_FAILED)));
     }
 
     @Override

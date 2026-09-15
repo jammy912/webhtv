@@ -22,6 +22,9 @@ public class SmbAdapter extends BaseDiffAdapter<SmbItem, SmbHolder> {
     public interface OnClickListener {
 
         void onItemClick(SmbItem item);
+
+        /** Raised on bind when a cell still has no thumbnail. */
+        void onThumbNeeded(SmbItem item, int[] size);
     }
 
     @NonNull
