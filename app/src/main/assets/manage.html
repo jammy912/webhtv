@@ -359,6 +359,56 @@
                     </div>
                 </div>
             </section>
+
+            <section id="viewSmb" class="manage-view">
+                <div class="manage-header">
+                    <div>
+                        <div class="manage-title">SMB 網路分享</div>
+                        <div class="manage-subtitle">設定後可在 App 內以縮圖瀏覽並播放</div>
+                    </div>
+                </div>
+                <div class="manage-card">
+                    <div id="smbList"></div>
+                </div>
+                <div class="manage-card action-panel">
+                    <div class="manage-title" id="smbFormTitle">新增伺服器</div>
+                    <input id="smbId" type="hidden" />
+                    <label class="form-label" for="smbName">名稱（可留空）</label>
+                    <input id="smbName" class="md-input" type="text" placeholder="例如 NAS 影片" />
+                    <label class="form-label" for="smbHost">主機位址</label>
+                    <input id="smbHost" class="md-input" type="text" placeholder="192.168.0.28" />
+                    <label class="form-label" for="smbPort">連接埠</label>
+                    <input id="smbPort" class="md-input" type="number" value="445" />
+                    <label class="form-label" for="smbShare">分享名稱</label>
+                    <input id="smbShare" class="md-input" type="text" placeholder="MP4toMP3" />
+                    <label class="form-label" for="smbPath">起始子路徑（可留空）</label>
+                    <input id="smbPath" class="md-input" type="text" placeholder="Video" />
+                    <label class="form-label" for="smbUser">帳號（留空為 guest）</label>
+                    <input id="smbUser" class="md-input" type="text" placeholder="administrator" />
+                    <label class="form-label" for="smbPass">密碼</label>
+                    <input id="smbPass" class="md-input" type="password" placeholder="編輯時留空表示不變" />
+                    <div class="action-row">
+                        <button class="md-btn md-btn-filled" onclick="saveSmbServer()" type="button">儲存</button>
+                        <button class="md-btn" onclick="testSmbServer()" type="button">測試連線</button>
+                        <button class="md-btn" onclick="resetSmbForm()" type="button">清除</button>
+                    </div>
+                    <div id="smbTestResult" class="manage-subtitle"></div>
+                </div>
+                <div class="manage-card action-panel">
+                    <div class="manage-title">縮圖</div>
+                    <div class="manage-subtitle">縮圖存放於快取目錄，系統在空間不足時可能自動清除</div>
+                    <label class="form-label" for="smbThumbEnabled">產生影片縮圖</label>
+                    <select id="smbThumbEnabled" class="md-input" onchange="saveSmbSettings()">
+                        <option value="1">開啟</option>
+                        <option value="0">關閉</option>
+                    </select>
+                    <label class="form-label" for="smbConcurrency">同時抽取數量（網路不穩時建議 1-2）</label>
+                    <input id="smbConcurrency" class="md-input" type="number" min="1" max="4" value="2" onchange="saveSmbSettings()" />
+                    <div class="action-row">
+                        <button class="md-btn" onclick="clearSmbThumb()" type="button">清除縮圖快取</button>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <nav class="md-nav-bar manage-nav">
@@ -370,6 +420,7 @@
             <button id="navConfigs" class="md-nav-item" onclick="showManageView('configs')"><span class="md-nav-label">接口</span></button>
             <button id="navSearch" class="md-nav-item" onclick="showManageView('search')"><span class="md-nav-label">搜尋</span></button>
             <button id="navPush" class="md-nav-item" onclick="showManageView('push')"><span class="md-nav-label">推送</span></button>
+            <button id="navSmb" class="md-nav-item" onclick="showManageView('smb')"><span class="md-nav-label">SMB</span></button>
         </nav>
     </div>
 

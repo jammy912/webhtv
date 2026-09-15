@@ -90,6 +90,10 @@ public class Path {
         return mkdir(new File(cache() + File.separator + "thunder"));
     }
 
+    public static File thumb() {
+        return mkdir(new File(cache() + File.separator + "thumb"));
+    }
+
     public static File root(String name) {
         return new File(root(), name);
     }

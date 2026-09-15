@@ -14,6 +14,7 @@ let fileTreeExpanded = new Set(['']);
 let fileTreeCache = {};
 let fileTreeLoading = new Set();
 let pendingDelFolder = null;
+let smbServers = [];
 let warnToastTimer = null;
 let syncPaths = [];
 let syncLoadedKey = '';
@@ -409,7 +410,119 @@ function loadCurrentView(force) {
     if (currentView === 'csp') loadCspManage(force);
     if (currentView === 'proxy') loadProxyManage(force);
     if (currentView === 'configs') loadConfigsManage(force);
+    if (currentView === 'smb') loadSmbManage(force);
     if (currentView === 'search' || currentView === 'push') updateActionModeText();
+}
+
+function loadSmbManage() {
+    getJson('/smb/servers', data => renderSmbManage(data));
+}
+
+function renderSmbManage(data) {
+    const servers = (data && data.servers) || [];
+    if (!servers.length) {
+        $('#smbList').html('<div class="manage-subtitle">尚未設定任何 SMB 伺服器</div>');
+    } else {
+        const rows = servers.map(item => {
+            const badge = item.hasPass ? '已設密碼' : (item.user ? '無密碼' : 'guest');
+            return '<div class="file-row">'
+                + '<div class="file-main"><div class="file-name">' + escHtml(item.name) + '</div>'
+                + '<div class="manage-subtitle">' + escHtml(item.url) + ' · ' + escHtml(badge) + '</div></div>'
+                + '<div class="file-actions">'
+                + '<button class="md-btn" type="button" onclick="editSmbServer(\'' + escHtml(item.id) + '\')">編輯</button>'
+                + '<button class="md-btn" type="button" onclick="testSmbServerById(\'' + escHtml(item.id) + '\')">測試</button>'
+                + '<button class="md-btn" type="button" onclick="deleteSmbServer(\'' + escHtml(item.id) + '\')">刪除</button>'
+                + '</div></div>';
+        });
+        $('#smbList').html(rows.join(''));
+    }
+    smbServers = servers;
+    $('#smbThumbEnabled').val(data && data.thumbEnabled === false ? '0' : '1');
+    $('#smbConcurrency').val((data && data.concurrency) || 2);
+}
+
+function smbForm() {
+    return {
+        id: $('#smbId').val(),
+        name: $('#smbName').val(),
+        host: $('#smbHost').val(),
+        port: $('#smbPort').val() || '445',
+        share: $('#smbShare').val(),
+        path: $('#smbPath').val(),
+        user: $('#smbUser').val(),
+        pass: $('#smbPass').val()
+    };
+}
+
+function resetSmbForm() {
+    $('#smbId').val('');
+    $('#smbName,#smbHost,#smbShare,#smbPath,#smbUser,#smbPass').val('');
+    $('#smbPort').val('445');
+    $('#smbFormTitle').text('新增伺服器');
+    $('#smbTestResult').text('');
+}
+
+function editSmbServer(id) {
+    const item = (smbServers || []).find(server => server.id === id);
+    if (!item) return;
+    $('#smbId').val(item.id);
+    $('#smbName').val(item.name);
+    $('#smbHost').val(item.host);
+    $('#smbPort').val(item.port);
+    $('#smbShare').val(item.share);
+    $('#smbPath').val(item.path);
+    $('#smbUser').val(item.user);
+    $('#smbPass').val('');
+    $('#smbFormTitle').text('編輯伺服器');
+    $('#smbTestResult').text('');
+}
+
+function saveSmbServer() {
+    const form = smbForm();
+    if (!form.host || !form.share) return warnToast('請填寫主機位址與分享名稱');
+    postJson('/smb/server', form, () => {
+        warnToast('已儲存');
+        resetSmbForm();
+        loadSmbManage();
+    });
+}
+
+function deleteSmbServer(id) {
+    postJson('/smb/server/delete', { id }, data => {
+        warnToast('已刪除');
+        resetSmbForm();
+        renderSmbManage(data);
+    });
+}
+
+function testSmbServer() {
+    runSmbTest(smbForm());
+}
+
+function testSmbServerById(id) {
+    runSmbTest({ id });
+}
+
+function runSmbTest(payload) {
+    $('#smbTestResult').text('測試中…');
+    postJson('/smb/server/test', payload, data => {
+        if (data && data.ok) $('#smbTestResult').text('連線成功：資料夾 ' + data.dirs + '、檔案 ' + data.files);
+        else $('#smbTestResult').text('連線失敗：' + ((data && data.message) || '未知錯誤'));
+    }, '測試失敗');
+}
+
+function saveSmbSettings() {
+    postJson('/smb/settings', {
+        thumbEnabled: $('#smbThumbEnabled').val(),
+        concurrency: $('#smbConcurrency').val()
+    }, data => renderSmbManage(data));
+}
+
+function clearSmbThumb() {
+    postJson('/smb/thumb/clear', {}, data => {
+        const mb = data && data.freed ? (data.freed / 1048576).toFixed(1) : '0';
+        warnToast('已清除 ' + mb + ' MB');
+    });
 }
 
 function formatFileSize(size, isDir) {

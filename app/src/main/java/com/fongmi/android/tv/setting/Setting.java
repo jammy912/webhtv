@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.BuildConfig;
+import com.fongmi.android.tv.bean.SmbServer;
 import com.fongmi.android.tv.bean.Update;
 import com.fongmi.android.tv.update.GithubProxy;
 import com.fongmi.android.tv.update.OciMirror;
@@ -38,6 +39,7 @@ import java.util.Locale;
 public class Setting {
 
     private static final Type STRING_LIST = new TypeToken<List<String>>() {}.getType();
+    private static final Type SMB_SERVER_LIST = new TypeToken<List<SmbServer>>() {}.getType();
 
     public static final int LANGUAGE_FOLLOW_SYSTEM = 0;
     public static final int LANGUAGE_SIMPLIFIED = 1;
@@ -749,5 +751,58 @@ public class Setting {
     public static boolean hasFileManager() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false;
         return new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + App.get().getPackageName())).resolveActivity(App.get().getPackageManager()) != null || new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).resolveActivity(App.get().getPackageManager()) != null;
+    }
+
+    public static List<SmbServer> getSmbServers() {
+        try {
+            List<SmbServer> items = App.gson().fromJson(Prefers.getString("smb_servers"), SMB_SERVER_LIST);
+            return items == null ? new ArrayList<>() : items;
+        } catch (Exception e) {
+            // A corrupt blob must never brick startup; the user re-adds the server.
+            return new ArrayList<>();
+        }
+    }
+
+    public static void putSmbServers(List<SmbServer> servers) {
+        Prefers.put("smb_servers", App.gson().toJson(servers == null ? new ArrayList<SmbServer>() : servers));
+    }
+
+    public static SmbServer getSmbServer(String id) {
+        if (id == null || id.isEmpty()) return null;
+        for (SmbServer server : getSmbServers()) if (id.equals(server.getId())) return server;
+        return null;
+    }
+
+    public static void putSmbServer(SmbServer server) {
+        if (server == null || server.getId().isEmpty()) return;
+        List<SmbServer> servers = getSmbServers();
+        int index = -1;
+        for (int i = 0; i < servers.size(); i++) if (servers.get(i).getId().equals(server.getId())) index = i;
+        if (index >= 0) servers.set(index, server);
+        else servers.add(server);
+        putSmbServers(servers);
+    }
+
+    public static void removeSmbServer(String id) {
+        if (id == null || id.isEmpty()) return;
+        List<SmbServer> servers = getSmbServers();
+        servers.removeIf(item -> id.equals(item.getId()));
+        putSmbServers(servers);
+    }
+
+    public static boolean getSmbThumbEnabled() {
+        return Prefers.getBoolean("smb_thumb_enabled", true);
+    }
+
+    public static void putSmbThumbEnabled(boolean enabled) {
+        Prefers.put("smb_thumb_enabled", enabled);
+    }
+
+    public static int getSmbThumbConcurrency() {
+        return Math.max(1, Math.min(4, Prefers.getInt("smb_thumb_concurrency", 2)));
+    }
+
+    public static void putSmbThumbConcurrency(int value) {
+        Prefers.put("smb_thumb_concurrency", Math.max(1, Math.min(4, value)));
     }
 }
