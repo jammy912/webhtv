@@ -132,6 +132,21 @@
         tools:visibility="visible" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/smb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="88dp"
+        app:backgroundTint="?attr/colorSecondaryContainer"
+        app:layout_anchor="@id/pager"
+        app:layout_anchorGravity="end|bottom"
+        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
+        app:srcCompat="@drawable/ic_folder"
+        app:tint="?attr/colorOnSecondaryContainer"
+        tools:visibility="visible" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/top"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

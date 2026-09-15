@@ -45,6 +45,7 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
+import com.fongmi.android.tv.ui.activity.SmbActivity;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.ApkPushDialog;
@@ -132,6 +133,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.top.setOnClickListener(this::onTop);
         mBinding.logo.setOnClickListener(this::onLogo);
         mBinding.link.setOnClickListener(this::onLink);
+        mBinding.smb.setOnClickListener(this::onSmb);
         mBinding.title.setOnClickListener(this::onSite);
         mBinding.title.setOnLongClickListener(this::reloadConfig);
         mBinding.typeMore.setOnTouchListener(this::onTypeMoreTouch);
@@ -235,6 +237,10 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private boolean onLink(View view) {
         LinkDialog.show(this);
         return true;
+    }
+
+    private void onSmb(View view) {
+        SmbActivity.start(getActivity());
     }
 
     private void onTypeMore(View view) {

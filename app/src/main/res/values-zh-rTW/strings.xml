@@ -1531,4 +1531,7 @@
 
     <string name="player_audio_badge_queue">佇列</string>
     <string name="player_audio_repeat">循環</string>
+
+    <string name="smb_title">SMB</string>
+    <string name="smb_empty">尚未設定 SMB 分享，請至網頁管理頁新增</string>
 </resources>

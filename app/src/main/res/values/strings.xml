@@ -1538,4 +1538,7 @@
 
     <string name="player_audio_badge_queue">Queue</string>
     <string name="player_audio_repeat">Repeat</string>
+
+    <string name="smb_title">SMB</string>
+    <string name="smb_empty">No SMB share configured. Add one in the web management page.</string>
 </resources>
