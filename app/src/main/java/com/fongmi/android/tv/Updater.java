@@ -514,8 +514,13 @@ public class Updater implements UpdateTransfer.Callback, UpdateListener {
                 return fingerprints(installed.signingInfo.getApkContentsSigners()).equals(fingerprints(archive.signingInfo.getApkContentsSigners()));
             }
             Set<String> current = fingerprints(installed.signingInfo.getApkContentsSigners());
+            if (current.isEmpty()) return false;
+            // Match the signer directly first. getSigningCertificateHistory() only
+            // carries a lineage for v3-signed APKs, so a v2-only build reports an
+            // empty history and would be rejected even when the key is identical.
+            if (current.equals(fingerprints(archive.signingInfo.getApkContentsSigners()))) return true;
             Set<String> candidateHistory = fingerprints(archive.signingInfo.getSigningCertificateHistory());
-            return !current.isEmpty() && candidateHistory.containsAll(current);
+            return candidateHistory.containsAll(current);
         }
         return fingerprints(installed.signatures).equals(fingerprints(archive.signatures));
     }
