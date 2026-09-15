@@ -73,6 +73,9 @@ public class SmbViewModel extends ViewModel {
         SmbExecutors.io().execute(() -> {
             try {
                 List<SmbItem> items = SmbBrowser.list(target, relPath);
+                int dirs = 0;
+                for (SmbItem item : items) if (item.isDir()) dirs++;
+                SpiderDebug.log(TAG, "list path=%s dirs=%d files=%d", relPath, dirs, items.size() - dirs);
                 post(id, State.content(items));
             } catch (Throwable e) {
                 SpiderDebug.log(TAG, "list failed errorType=%s", e.getClass().getSimpleName());

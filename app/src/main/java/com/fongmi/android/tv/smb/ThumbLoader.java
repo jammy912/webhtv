@@ -51,12 +51,17 @@ public final class ThumbLoader {
         if (!Setting.getSmbThumbEnabled()) return;
         String key = ThumbCache.key(item);
         File cached = ThumbCache.get(key);
+        // Never answer inline: request() is called from onBindViewHolder, and a
+        // cache hit would otherwise update the adapter while the RecyclerView is
+        // still laying out. VerticalGridView throws for that; GridLayoutManager
+        // tolerates it, which is why only the TV build crashed.
         if (cached != null) {
-            callback.onThumb(item, cached.getAbsolutePath(), true);
+            String path = cached.getAbsolutePath();
+            App.post(() -> callback.onThumb(item, path, true));
             return;
         }
         if (ThumbCache.failed(key) || tripped()) {
-            callback.onThumb(item, "", false);
+            App.post(() -> callback.onThumb(item, "", false));
             return;
         }
         if (RUNNING.containsKey(key)) return;
