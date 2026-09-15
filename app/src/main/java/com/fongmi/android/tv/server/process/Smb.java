@@ -151,8 +151,9 @@ public class Smb implements Process {
                 object.addProperty("message", "OK");
             }
         } catch (Throwable e) {
-            // Log the type only — the message can embed the share path.
-            SpiderDebug.log(TAG, "test failed errorType=%s", e.getClass().getSimpleName());
+            // The NT status is what makes this diagnosable; it carries the share
+            // path but never the password, which lives only in the URI we build.
+            SpiderDebug.log(TAG, "test failed errorType=%s status=%s", e.getClass().getSimpleName(), e.getMessage());
             object.addProperty("ok", false);
             object.addProperty("message", describe(e));
         } finally {
@@ -217,10 +218,18 @@ public class Smb implements Process {
         String name = e.getClass().getSimpleName();
         String message = e.getMessage();
         if (TextUtils.isEmpty(message)) return name;
-        if (message.contains("STATUS_LOGON_FAILURE")) return "Wrong username or password";
-        if (message.contains("STATUS_BAD_NETWORK_NAME")) return "Share not found";
-        if (message.contains("STATUS_ACCESS_DENIED")) return "Access denied";
-        return name;
+        if (message.contains("STATUS_LOGON_FAILURE")) return "帳號或密碼錯誤";
+        if (message.contains("STATUS_BAD_NETWORK_NAME")) return "找不到分享名稱";
+        if (message.contains("STATUS_ACCESS_DENIED")) return "沒有存取權限";
+        if (message.contains("STATUS_OBJECT_NAME_NOT_FOUND")) return "找不到起始子路徑";
+        if (message.contains("STATUS_OBJECT_PATH_NOT_FOUND")) return "找不到起始子路徑";
+        if (message.contains("STATUS_NOT_A_DIRECTORY")) return "起始子路徑不是資料夾";
+        if (message.contains("STATUS_ACCOUNT_DISABLED")) return "帳號已停用";
+        if (message.contains("STATUS_PASSWORD_EXPIRED")) return "密碼已過期";
+        if (message.contains("STATUS_SHARING_VIOLATION")) return "檔案被其他程式鎖定";
+        // Anything else: show the raw status so a failure is diagnosable rather
+        // than collapsing into a bare class name.
+        return name + ": " + message;
     }
 
     private JsonObject toJson(SmbServer server) {

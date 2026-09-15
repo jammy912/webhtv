@@ -109,7 +109,10 @@ public class SmbViewModel extends ViewModel {
         if (message.contains("STATUS_BAD_NETWORK_NAME")) return "找不到分享名稱";
         if (message.contains("STATUS_ACCESS_DENIED")) return "沒有存取權限";
         if (message.contains("STATUS_OBJECT_NAME_NOT_FOUND")) return "找不到資料夾";
-        return e.getClass().getSimpleName();
+        if (message.contains("STATUS_OBJECT_PATH_NOT_FOUND")) return "找不到資料夾";
+        if (message.contains("STATUS_NOT_A_DIRECTORY")) return "路徑不是資料夾";
+        // Otherwise surface the raw status: a bare class name is undiagnosable.
+        return e.getClass().getSimpleName() + ": " + message;
     }
 
     @Override
