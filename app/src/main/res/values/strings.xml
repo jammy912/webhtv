@@ -1546,4 +1546,5 @@
     <string name="smb_sort_name">Name</string>
     <string name="smb_sort_time">Newest</string>
     <string name="smb_sort_size">Largest</string>
+    <string name="smb_searching">Searching…</string>
 </resources>

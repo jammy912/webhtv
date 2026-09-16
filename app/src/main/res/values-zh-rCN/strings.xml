@@ -1539,4 +1539,5 @@
     <string name="smb_sort_name">名称</string>
     <string name="smb_sort_time">最新</string>
     <string name="smb_sort_size">最大</string>
+    <string name="smb_searching">搜索中…</string>
 </resources>

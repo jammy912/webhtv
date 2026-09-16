@@ -119,7 +119,13 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
             return;
         }
         String path = mViewModel.getPath();
-        mBinding.title.setText(TextUtils.isEmpty(path) ? server.getName() : server.getName() + "/" + path);
+        String base = TextUtils.isEmpty(path) ? server.getName() : server.getName() + "/" + path;
+        // Show where a running search has reached, so a slow walk does not look hung.
+        if (mViewModel.isSearching()) {
+            String folder = mViewModel.getSearchFolder();
+            base = base + "  ·  " + getString(com.fongmi.android.tv.R.string.smb_searching) + (TextUtils.isEmpty(folder) ? "" : " " + folder);
+        }
+        mBinding.title.setText(base);
     }
 
     @Override

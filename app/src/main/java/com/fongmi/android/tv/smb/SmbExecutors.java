@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public final class SmbExecutors {
 
     private static ExecutorService io;
+    private static ExecutorService search;
     private static ThreadPoolExecutor thumb;
     private static int thumbSize;
 
@@ -34,6 +35,15 @@ public final class SmbExecutors {
         return io;
     }
 
+    /**
+     * Recursive search runs apart from listing: a deep walk can take a while and
+     * must not hold up the navigation the user is still doing.
+     */
+    public static synchronized ExecutorService search() {
+        if (search == null || search.isShutdown()) search = Executors.newSingleThreadExecutor(runnable -> thread(runnable, "smb-search"));
+        return search;
+    }
+
     /** Recreated when the user changes the concurrency setting. */
     public static synchronized ThreadPoolExecutor thumb() {
         int size = Setting.getSmbThumbConcurrency();
@@ -43,6 +53,12 @@ public final class SmbExecutors {
         thumb = new ThreadPoolExecutor(size, size, 30, TimeUnit.SECONDS, new LifoQueue<>(), runnable -> thread(runnable, "smb-thumb"));
         thumb.allowCoreThreadTimeOut(true);
         return thumb;
+    }
+
+    public static synchronized void stopSearch() {
+        if (search == null) return;
+        search.shutdownNow();
+        search = null;
     }
 
     public static synchronized void stopThumb() {

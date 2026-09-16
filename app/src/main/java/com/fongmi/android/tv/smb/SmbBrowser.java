@@ -16,7 +16,10 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Lists the folders and playable video files inside an SMB share. */
 public final class SmbBrowser {
@@ -74,6 +77,53 @@ public final class SmbBrowser {
         items.addAll(dirs);
         items.addAll(files);
         return items;
+    }
+
+
+    /** Receives matches as the walk finds them. */
+    public interface SearchCallback {
+
+        void onMatch(SmbItem item);
+
+        void onProgress(String folder, int found);
+    }
+
+    /**
+     * Walks the tree breadth-first from {@code root}, reporting matches as they
+     * appear rather than at the end: on a high-latency share a deep walk takes
+     * long enough that waiting for a complete result set would feel broken.
+     *
+     * <p>Breadth-first so shallow matches, which are the likely ones, surface
+     * first. Honours {@code cancelled} between every directory.
+     */
+    public static void search(SmbServer server, String root, String query, SearchCallback callback, AtomicBoolean cancelled) throws Exception {
+        String needle = query.toLowerCase(Locale.US);
+        Deque<String> queue = new ArrayDeque<>();
+        queue.add(root == null ? "" : root);
+        int found = 0;
+        int visited = 0;
+        while (!queue.isEmpty()) {
+            if (cancelled.get()) return;
+            String dir = queue.poll();
+            List<SmbItem> items;
+            try {
+                items = read(server, dir);
+            } catch (Exception e) {
+                // A folder we cannot read must not abort the whole search.
+                continue;
+            }
+            if (++visited % 2 == 0 || found == 0) callback.onProgress(dir, found);
+            for (SmbItem item : items) {
+                if (cancelled.get()) return;
+                if (item.isDir()) {
+                    queue.add(item.getRelPath());
+                } else if (item.getName().toLowerCase(Locale.US).contains(needle)) {
+                    callback.onMatch(item);
+                    found++;
+                }
+            }
+        }
+        callback.onProgress("", found);
     }
 
     public static boolean isVideo(String name) {

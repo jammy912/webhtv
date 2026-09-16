@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Drives one SMB browsing session: current folder, listing, and errors. */
@@ -42,6 +43,10 @@ public class SmbViewModel extends ViewModel {
     private List<SmbItem> raw = new ArrayList<>();
     private int sort = SORT_NAME;
     private String query = "";
+    /** Matches found below the current folder by the running search. */
+    private final List<SmbItem> deep = new ArrayList<>();
+    private AtomicBoolean searchCancelled;
+    private String searchFolder = "";
 
     public LiveData<State> getState() {
         return state;
@@ -62,6 +67,8 @@ public class SmbViewModel extends ViewModel {
 
     /** Shows one tile per configured server. */
     public void showServers() {
+        cancelSearch();
+        deep.clear();
         server = null;
         path = "";
         requestId.incrementAndGet();
@@ -83,6 +90,8 @@ public class SmbViewModel extends ViewModel {
     }
 
     public void open(SmbServer server, String path) {
+        cancelSearch();
+        deep.clear();
         this.server = server;
         this.path = path == null ? "" : path;
         reload();
@@ -155,6 +164,67 @@ public class SmbViewModel extends ViewModel {
 
     public void setQuery(String value) {
         query = value == null ? "" : value.trim();
+        cancelSearch();
+        deep.clear();
+        searchFolder = "";
+        present();
+        // The loaded folder filters instantly; anything deeper has to be walked.
+        if (!query.isEmpty() && server != null) startSearch();
+    }
+
+    /** True while a recursive search is walking the tree. */
+    public boolean isSearching() {
+        return searchCancelled != null && !searchCancelled.get();
+    }
+
+    /** The folder the search is currently reading, for progress display. */
+    public String getSearchFolder() {
+        return searchFolder;
+    }
+
+    public void cancelSearch() {
+        if (searchCancelled != null) searchCancelled.set(true);
+        searchCancelled = null;
+    }
+
+    private void startSearch() {
+        final AtomicBoolean cancelled = new AtomicBoolean();
+        final SmbServer target = server;
+        final String root = path;
+        final String needle = query;
+        searchCancelled = cancelled;
+        SmbExecutors.search().execute(() -> {
+            try {
+                SmbBrowser.search(target, root, needle, new SmbBrowser.SearchCallback() {
+                    @Override
+                    public void onMatch(SmbItem item) {
+                        App.post(() -> addDeep(cancelled, item));
+                    }
+
+                    @Override
+                    public void onProgress(String folder, int found) {
+                        App.post(() -> {
+                            if (cancelled.get() || cancelled != searchCancelled) return;
+                            searchFolder = folder;
+                            if (folder.isEmpty()) searchCancelled = null;
+                        });
+                    }
+                }, cancelled);
+            } catch (Throwable e) {
+                SpiderDebug.log(TAG, "search failed errorType=%s", e.getClass().getSimpleName());
+                App.post(() -> {
+                    if (cancelled == searchCancelled) searchCancelled = null;
+                });
+            }
+        });
+    }
+
+    private void addDeep(AtomicBoolean cancelled, SmbItem item) {
+        if (cancelled.get() || cancelled != searchCancelled) return;
+        // The current folder is already in raw; only add what the walk found below.
+        for (SmbItem existing : raw) if (existing.isSameItem(item)) return;
+        for (SmbItem existing : deep) if (existing.isSameItem(item)) return;
+        deep.add(item);
         present();
     }
 
@@ -168,6 +238,7 @@ public class SmbViewModel extends ViewModel {
         for (SmbItem item : raw) {
             if (needle.isEmpty() || item.getName().toLowerCase(Locale.US).contains(needle)) items.add(item);
         }
+        if (!needle.isEmpty()) items.addAll(deep);
         items.sort(comparator());
         state.setValue(State.content(items));
     }
@@ -238,6 +309,7 @@ public class SmbViewModel extends ViewModel {
     protected void onCleared() {
         super.onCleared();
         requestId.incrementAndGet();
+        cancelSearch();
         SmbExecutors.io().execute(SmbClientPool::closeAll);
     }
 
