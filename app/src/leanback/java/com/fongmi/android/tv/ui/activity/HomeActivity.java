@@ -795,7 +795,9 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void confirmExitHome() {
         if (PlaybackService.isRunning()) Util.moveToBackground(this);
-        else super.onBackInvoked();
+        // Finishing only this activity would surface whatever is left beneath it,
+        // so a confirmed exit clears the task instead.
+        else finishAffinity();
     }
 
     @Override

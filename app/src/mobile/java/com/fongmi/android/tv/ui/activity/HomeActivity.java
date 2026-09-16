@@ -426,7 +426,9 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             change(0);
         } else if (mManager.canBack(0)) {
             if (PlaybackService.isRunning()) Util.moveToBackground(this);
-            else super.onBackInvoked();
+            // Finishing only this activity would surface whatever is left beneath
+            // it, so a confirmed exit clears the task instead.
+            else finishAffinity();
         }
     }
 
