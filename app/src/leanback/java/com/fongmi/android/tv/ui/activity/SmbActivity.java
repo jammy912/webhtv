@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.text.TextUtils;
 
 import androidx.leanback.widget.ArrayObjectAdapter;
@@ -131,6 +132,29 @@ public class SmbActivity extends BaseActivity implements SmbPresenter.OnClickLis
         item.setThumbState(SmbItem.THUMB_LOADING);
         ThumbLoader.request(item, size[0], size[1], (target, path, ok) ->
                 mViewModel.update(target.withThumb(path, ok ? SmbItem.THUMB_READY : SmbItem.THUMB_FAILED)));
+    }
+
+    /**
+     * MENU cycles the sort order. Typing a filter with a D-pad is not worth the
+     * friction, so search stays a phone feature.
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            mViewModel.cycleSort();
+            Notify.show(sortLabel(mViewModel.getSort()));
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private String sortLabel(int sort) {
+        int res = switch (sort) {
+            case SmbViewModel.SORT_TIME -> R.string.smb_sort_time;
+            case SmbViewModel.SORT_SIZE -> R.string.smb_sort_size;
+            default -> R.string.smb_sort_name;
+        };
+        return ResUtil.getString(R.string.smb_sort) + ": " + ResUtil.getString(res);
     }
 
     @Override

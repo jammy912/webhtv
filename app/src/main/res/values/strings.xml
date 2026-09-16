@@ -1541,4 +1541,9 @@
 
     <string name="smb_title">SMB</string>
     <string name="smb_empty">No SMB share configured. Add one in the web management page.</string>
+    <string name="smb_search">Search</string>
+    <string name="smb_sort">Sort</string>
+    <string name="smb_sort_name">Name</string>
+    <string name="smb_sort_time">Newest</string>
+    <string name="smb_sort_size">Largest</string>
 </resources>

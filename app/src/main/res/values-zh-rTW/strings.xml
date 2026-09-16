@@ -1534,4 +1534,9 @@
 
     <string name="smb_title">SMB</string>
     <string name="smb_empty">尚未設定 SMB 分享，請至網頁管理頁新增</string>
+    <string name="smb_search">搜尋</string>
+    <string name="smb_sort">排序</string>
+    <string name="smb_sort_name">名稱</string>
+    <string name="smb_sort_time">最新</string>
+    <string name="smb_sort_size">最大</string>
 </resources>

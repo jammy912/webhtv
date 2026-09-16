@@ -14,7 +14,9 @@ import com.fongmi.android.tv.setting.Setting;
 import com.github.catvod.crawler.SpiderDebug;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Drives one SMB browsing session: current folder, listing, and errors. */
@@ -26,11 +28,20 @@ public class SmbViewModel extends ViewModel {
     public static final int CONTENT = 1;
     public static final int ERROR = 2;
 
+    public static final int SORT_NAME = 0;
+    public static final int SORT_TIME = 1;
+    public static final int SORT_SIZE = 2;
+    private static final int SORT_COUNT = 3;
+
     private final MutableLiveData<State> state = new MutableLiveData<>();
     private final AtomicInteger requestId = new AtomicInteger();
 
     private SmbServer server;
     private String path = "";
+    /** The listing as returned, before sorting and filtering are applied. */
+    private List<SmbItem> raw = new ArrayList<>();
+    private int sort = SORT_NAME;
+    private String query = "";
 
     public LiveData<State> getState() {
         return state;
@@ -55,9 +66,10 @@ public class SmbViewModel extends ViewModel {
         path = "";
         requestId.incrementAndGet();
         List<SmbServer> servers = Setting.getSmbServers();
-        List<SmbItem> items = new ArrayList<>();
-        for (SmbServer item : servers) items.add(SmbItem.server(item));
-        state.setValue(State.content(items));
+        raw = new ArrayList<>();
+        for (SmbServer item : servers) raw.add(SmbItem.server(item));
+        query = "";
+        present();
     }
 
     /**
@@ -115,7 +127,7 @@ public class SmbViewModel extends ViewModel {
                 int dirs = 0;
                 for (SmbItem item : items) if (item.isDir()) dirs++;
                 SpiderDebug.log(TAG, "list path=%s dirs=%d files=%d", relPath, dirs, items.size() - dirs);
-                post(id, State.content(items));
+                postList(id, items);
             } catch (Throwable e) {
                 SpiderDebug.log(TAG, "list failed errorType=%s", e.getClass().getSimpleName());
                 post(id, State.error(describe(e)));
@@ -123,10 +135,64 @@ public class SmbViewModel extends ViewModel {
         });
     }
 
+    public int getSort() {
+        return sort;
+    }
+
+    public String getQuery() {
+        return query;
+    }
+
+    /** Cycles name -> newest -> largest, keeping the current listing. */
+    public void cycleSort() {
+        setSort((sort + 1) % SORT_COUNT);
+    }
+
+    public void setSort(int value) {
+        sort = value < 0 || value >= SORT_COUNT ? SORT_NAME : value;
+        present();
+    }
+
+    public void setQuery(String value) {
+        query = value == null ? "" : value.trim();
+        present();
+    }
+
+    /**
+     * Applies the current sort and filter to the raw listing. Folders always lead
+     * so navigation stays predictable however the files are ordered.
+     */
+    private void present() {
+        List<SmbItem> items = new ArrayList<>();
+        String needle = query.toLowerCase(Locale.US);
+        for (SmbItem item : raw) {
+            if (needle.isEmpty() || item.getName().toLowerCase(Locale.US).contains(needle)) items.add(item);
+        }
+        items.sort(comparator());
+        state.setValue(State.content(items));
+    }
+
+    private Comparator<SmbItem> comparator() {
+        Comparator<SmbItem> byName = (a, b) -> a.getName().compareToIgnoreCase(b.getName());
+        Comparator<SmbItem> tail = switch (sort) {
+            case SORT_TIME -> (a, b) -> Long.compare(b.getTime(), a.getTime());
+            case SORT_SIZE -> (a, b) -> Long.compare(b.getSize(), a.getSize());
+            default -> byName;
+        };
+        // Directories first, then the chosen order, with name as a stable tiebreak.
+        return Comparator.<SmbItem, Boolean>comparing(item -> !item.isDir()).thenComparing(tail).thenComparing(byName);
+    }
+
     /** Replaces one item in place, e.g. when its thumbnail finishes decoding. */
     public void update(SmbItem item) {
+        if (item == null) return;
+        for (int i = 0; i < raw.size(); i++) {
+            if (!raw.get(i).isSameItem(item)) continue;
+            raw.set(i, item);
+            break;
+        }
         State current = state.getValue();
-        if (current == null || item == null) return;
+        if (current == null) return;
         List<SmbItem> items = new ArrayList<>(current.items);
         for (int i = 0; i < items.size(); i++) {
             if (!items.get(i).isSameItem(item)) continue;
@@ -134,6 +200,17 @@ public class SmbViewModel extends ViewModel {
             state.setValue(State.content(items));
             return;
         }
+    }
+
+    /** Stores a fresh listing, then presents it under the current sort/filter. */
+    private void postList(int id, List<SmbItem> items) {
+        if (id != requestId.get()) return;
+        App.post(() -> {
+            if (id != requestId.get()) return;
+            raw = items;
+            query = "";
+            present();
+        });
     }
 
     /** Drops results from a folder the user has already navigated away from. */

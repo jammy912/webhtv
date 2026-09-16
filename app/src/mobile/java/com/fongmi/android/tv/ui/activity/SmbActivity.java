@@ -4,10 +4,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.Menu;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -27,6 +29,7 @@ import com.fongmi.android.tv.smb.ThumbLoader;
 import com.fongmi.android.tv.ui.adapter.SmbAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ResUtil;
 
 import android.net.Uri;
 
@@ -143,9 +146,49 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(com.fongmi.android.tv.R.menu.menu_smb, menu);
+        SearchView search = (SearchView) menu.findItem(com.fongmi.android.tv.R.id.action_search).getActionView();
+        if (search != null) setSearch(search);
+        return true;
+    }
+
+    private void setSearch(SearchView search) {
+        search.setQueryHint(getString(com.fongmi.android.tv.R.string.smb_search));
+        search.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String text) {
+                // Filters the loaded folder only; it never re-reads the share.
+                mViewModel.setQuery(text);
+                return true;
+            }
+        });
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) onBackInvoked();
+        else if (item.getItemId() == com.fongmi.android.tv.R.id.action_sort) onSort();
         return super.onOptionsItemSelected(item);
+    }
+
+    private void onSort() {
+        mViewModel.cycleSort();
+        Notify.show(sortLabel(mViewModel.getSort()));
+    }
+
+    private String sortLabel(int sort) {
+        int res = switch (sort) {
+            case SmbViewModel.SORT_TIME -> com.fongmi.android.tv.R.string.smb_sort_time;
+            case SmbViewModel.SORT_SIZE -> com.fongmi.android.tv.R.string.smb_sort_size;
+            default -> com.fongmi.android.tv.R.string.smb_sort_name;
+        };
+        return ResUtil.getString(com.fongmi.android.tv.R.string.smb_sort) + ": " + ResUtil.getString(res);
     }
 
     @Override
