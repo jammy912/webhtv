@@ -31,6 +31,7 @@ import com.fongmi.android.tv.update.UpdateHttp;
 import com.fongmi.android.tv.update.UpdateRoutePlanner;
 import com.fongmi.android.tv.update.UpdateTarget;
 import com.fongmi.android.tv.update.UpdateTransfer;
+import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Path;
 
 import org.json.JSONArray;
@@ -501,7 +502,18 @@ public class Updater implements UpdateTransfer.Callback, UpdateListener {
             long archiveCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? archive.getLongVersionCode() : archive.versionCode;
             if (update != null && update.code > 0 && archiveCode != update.code) return false;
             if (update != null && !TextUtils.isEmpty(update.versionName) && !update.versionName.equals(archive.versionName)) return false;
-            return signaturesMatch(installed, archive);
+            if (signaturesMatch(installed, archive)) return true;
+            // SigningInfo is populated from the v3 block, so a v2-only APK can
+            // report no signers at all. The legacy arrays still describe it.
+            PackageInfo legacyArchive = manager.getPackageArchiveInfo(file.getAbsolutePath(), PackageManager.GET_SIGNATURES);
+            PackageInfo legacyInstalled = manager.getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
+            if (legacyArchive == null || legacyInstalled == null) return false;
+            Set<String> current = fingerprints(legacyInstalled.signatures);
+            boolean matched = !current.isEmpty() && current.equals(fingerprints(legacyArchive.signatures));
+            SpiderDebug.log("update", "signature fallback matched=%s installed=%d archive=%d", matched,
+                    legacyInstalled.signatures == null ? 0 : legacyInstalled.signatures.length,
+                    legacyArchive.signatures == null ? 0 : legacyArchive.signatures.length);
+            return matched;
         } catch (Exception e) {
             return false;
         }
@@ -520,7 +532,10 @@ public class Updater implements UpdateTransfer.Callback, UpdateListener {
             // empty history and would be rejected even when the key is identical.
             if (current.equals(fingerprints(archive.signingInfo.getApkContentsSigners()))) return true;
             Set<String> candidateHistory = fingerprints(archive.signingInfo.getSigningCertificateHistory());
-            return candidateHistory.containsAll(current);
+            boolean matched = candidateHistory.containsAll(current);
+            if (!matched) SpiderDebug.log("update", "signingInfo mismatch current=%d contents=%d history=%d",
+                    current.size(), fingerprints(archive.signingInfo.getApkContentsSigners()).size(), candidateHistory.size());
+            return matched;
         }
         return fingerprints(installed.signatures).equals(fingerprints(archive.signatures));
     }
