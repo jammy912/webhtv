@@ -82,8 +82,8 @@ public class SmbActivity extends BaseActivity implements SmbPresenter.OnClickLis
             mBinding.progressLayout.showEmpty();
             return;
         }
-        SmbServer server = servers.get(0);
-        mViewModel.open(server, server.getPath());
+        // One share opens straight away; several show a picker first.
+        mViewModel.openFirst();
     }
 
     private void onState(SmbViewModel.State state) {
@@ -102,7 +102,10 @@ public class SmbActivity extends BaseActivity implements SmbPresenter.OnClickLis
 
     private void setTitle() {
         SmbServer server = mViewModel.getServer();
-        if (server == null) return;
+        if (server == null) {
+            mBinding.title.setText(getString(R.string.smb_title));
+            return;
+        }
         String path = mViewModel.getPath();
         mBinding.title.setText(TextUtils.isEmpty(path) ? server.getName() : server.getName() + "/" + path);
     }
@@ -132,7 +135,7 @@ public class SmbActivity extends BaseActivity implements SmbPresenter.OnClickLis
 
     @Override
     protected void onBackInvoked() {
-        if (mViewModel == null || mViewModel.isRoot()) super.onBackInvoked();
+        if (mViewModel == null || !mViewModel.canGoUp()) super.onBackInvoked();
         else mViewModel.up();
     }
 }

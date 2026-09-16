@@ -24,6 +24,18 @@ public class SmbItem implements Diffable<SmbItem> {
     private String url;
     private String thumb;
     private int thumbState;
+    private boolean serverEntry;
+
+    /**
+     * A tile standing for a whole server, shown at the top level when more than
+     * one share is configured. Marked as a directory so navigation treats it the
+     * same way, but carries no path of its own.
+     */
+    public static SmbItem server(SmbServer server) {
+        SmbItem item = new SmbItem(server.getId(), server.getName(), "", true, 0, server.getTime());
+        item.serverEntry = true;
+        return item;
+    }
 
     public SmbItem(String serverId, String name, String relPath, boolean dir, long size, long time) {
         this.serverId = serverId;
@@ -48,6 +60,11 @@ public class SmbItem implements Diffable<SmbItem> {
 
     public boolean isDir() {
         return dir;
+    }
+
+    /** True when this tile selects a server rather than a folder. */
+    public boolean isServerEntry() {
+        return serverEntry;
     }
 
     public long getSize() {
@@ -90,6 +107,7 @@ public class SmbItem implements Diffable<SmbItem> {
         copy.setUrl(url);
         copy.setThumb(thumb);
         copy.setThumbState(state);
+        copy.serverEntry = serverEntry;
         return copy;
     }
 
@@ -97,7 +115,8 @@ public class SmbItem implements Diffable<SmbItem> {
     public boolean equals(@Nullable Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof SmbItem it)) return false;
-        return isDir() == it.isDir() && getServerId().equals(it.getServerId()) && getRelPath().equals(it.getRelPath());
+        return isDir() == it.isDir() && isServerEntry() == it.isServerEntry()
+                && getServerId().equals(it.getServerId()) && getRelPath().equals(it.getRelPath());
     }
 
     @Override

@@ -91,8 +91,8 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
             mBinding.progressLayout.showEmpty();
             return;
         }
-        SmbServer server = servers.get(0);
-        mViewModel.open(server, server.getPath());
+        // One share opens straight away; several show a picker first.
+        mViewModel.openFirst();
     }
 
     private void onState(SmbViewModel.State state) {
@@ -111,7 +111,10 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
 
     private void setTitle() {
         SmbServer server = mViewModel.getServer();
-        if (server == null) return;
+        if (server == null) {
+            mBinding.title.setText(getString(com.fongmi.android.tv.R.string.smb_title));
+            return;
+        }
         String path = mViewModel.getPath();
         mBinding.title.setText(TextUtils.isEmpty(path) ? server.getName() : server.getName() + "/" + path);
     }
@@ -147,7 +150,7 @@ public class SmbActivity extends BaseActivity implements SmbAdapter.OnClickListe
 
     @Override
     protected void onBackInvoked() {
-        if (mViewModel == null || mViewModel.isRoot()) super.onBackInvoked();
+        if (mViewModel == null || !mViewModel.canGoUp()) super.onBackInvoked();
         else mViewModel.up();
     }
 }

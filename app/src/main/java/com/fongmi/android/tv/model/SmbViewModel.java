@@ -10,6 +10,7 @@ import com.fongmi.android.tv.bean.SmbServer;
 import com.fongmi.android.tv.smb.SmbBrowser;
 import com.fongmi.android.tv.smb.SmbClientPool;
 import com.fongmi.android.tv.smb.SmbExecutors;
+import com.fongmi.android.tv.setting.Setting;
 import com.github.catvod.crawler.SpiderDebug;
 
 import java.util.ArrayList;
@@ -43,8 +44,30 @@ public class SmbViewModel extends ViewModel {
         return path;
     }
 
+    /** True when back should leave the browser rather than go up a level. */
     public boolean isRoot() {
-        return server == null || path.equals(server.getPath());
+        return server == null;
+    }
+
+    /** Shows one tile per configured server. */
+    public void showServers() {
+        server = null;
+        path = "";
+        requestId.incrementAndGet();
+        List<SmbServer> servers = Setting.getSmbServers();
+        List<SmbItem> items = new ArrayList<>();
+        for (SmbServer item : servers) items.add(SmbItem.server(item));
+        state.setValue(State.content(items));
+    }
+
+    /**
+     * Opens a server directly, skipping the list. Used when only one share is
+     * configured, so the common case costs no extra keypress.
+     */
+    public void openFirst() {
+        List<SmbServer> servers = Setting.getSmbServers();
+        if (servers.size() == 1) open(servers.get(0), servers.get(0).getPath());
+        else showServers();
     }
 
     public void open(SmbServer server, String path) {
@@ -55,13 +78,29 @@ public class SmbViewModel extends ViewModel {
 
     public void enter(SmbItem item) {
         if (item == null || !item.isDir()) return;
+        if (item.isServerEntry()) {
+            SmbServer target = Setting.getSmbServer(item.getServerId());
+            if (target != null) open(target, target.getPath());
+            return;
+        }
         open(server, item.getRelPath());
     }
 
-    /** Navigates to the parent folder; stops at the configured start path. */
+    /** Goes up a folder, then back out to the server list at the share root. */
     public void up() {
-        if (server == null || isRoot()) return;
+        if (server == null) return;
+        if (path.equals(server.getPath())) {
+            if (Setting.getSmbServers().size() > 1) showServers();
+            return;
+        }
         open(server, SmbServer.parent(path));
+    }
+
+    /** True when back at the share root should return to the server list. */
+    public boolean canGoUp() {
+        if (server == null) return false;
+        if (!path.equals(server.getPath())) return true;
+        return Setting.getSmbServers().size() > 1;
     }
 
     public void reload() {
